@@ -8,7 +8,22 @@
 Deposit USDC.e → Mint the same amount → Distribute → Redeem 1:1
 ```
 
-ReserveRail is an unaudited, low-value hackathon pilot. The product and contract lifecycle are implemented, and a complete ten-transaction rehearsal is deployed on HSKChain Testnet. The checked mainnet manifest remains **undeployed**, so the hosted product does not present testnet state as mainnet evidence or substitute fabricated balances, addresses, or receipts.
+ReserveRail is an unaudited, low-value hackathon pilot. The product and contract lifecycle are
+implemented and covered by automated tests. A ten-transaction deployment-and-reserve-backed-mint
+rehearsal is deployed on HSKChain Testnet. The checked mainnet manifest remains **undeployed**, so
+the hosted product does not present testnet state as mainnet evidence or substitute fabricated
+balances, addresses, or receipts.
+
+## Current Product Status
+
+| Capability                                      | Current evidence                                                                                                       |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Hosted read-only product                        | Live over HTTPS; no wallet is required to inspect the landing page or truthful undeployed state                        |
+| Contract and interface paths                    | Create, deposit/mint, transfer, redeem, roles, pause, and public proof are implemented and covered by repository tests |
+| Verified HSKChain Testnet actions               | Platform deployment, pilot-pair creation, `100 tUSDC` deposit, and exact `100 rrtUSD` mint                             |
+| Testnet transfer and redemption receipts        | Not recorded yet; these implemented paths are not presented as live lifecycle evidence                                 |
+| HSK mainnet                                     | Undeployed; no official-USDC.e pilot, reserve, supply, transfer, or redemption is claimed                              |
+| Optional allowlist, batch, and Merkle campaigns | Not shipped and not presented as working features                                                                      |
 
 ## Run It in 30 Seconds
 
@@ -29,10 +44,17 @@ Open the local URL printed by Vite, connect MetaMask, and use the built-in netwo
 
 ## What Judges Can Inspect
 
-- **Issuer path:** create a branded issuer pair, deposit reserve, and mint only against deposited backing.
-- **Holder path:** transfer tokens, request redemption, and inspect the resulting wallet transaction.
+The following interfaces and contract paths are implemented. On the hosted mainnet route, write
+actions remain disabled until a reviewed mainnet manifest exists. The verified live testnet scope
+is limited to deployment, pilot creation, reserve deposit, and matching mint evidence.
+
+- **Issuer path:** inspect the flow for creating a branded issuer pair, depositing reserve, and
+  minting only against deposited backing.
+- **Holder path:** inspect transfer and redemption flows and their wallet transaction states; live
+  HSK transfer and redemption receipts remain follow-up evidence.
 - **Control path:** display operational roles and emergency controls without hiding privileged behavior.
-- **Proof path:** expose deployment status, reserve coverage, policy, contract addresses, and explorer evidence from one public route.
+- **Proof path:** expose truthful deployment status and, once a reviewed deployment is configured,
+  read reserve coverage, policy, contract addresses, and explorer evidence from one public route.
 - **Truthful failure states:** rejected wallet requests, wrong networks, missing roles, and undeployed contracts are shown as errors—not converted into fake success.
 
 ## Why HSK Chain
