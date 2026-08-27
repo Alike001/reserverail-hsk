@@ -1,6 +1,6 @@
 # HSK Testnet Deployment Rehearsal
 
-Status: **deployed and independently reconciled on HSKChain Testnet; explorer source verification pending**
+Status: **deployed, independently reconciled, and source-verified on HSKChain Testnet**
 
 This runbook deploys the complete ReserveRail pilot lifecycle to HSKChain Testnet only. It uses
 the public deployer address `0xdE67A35B322e5A31e8215B5245CA4e48d7977F71`; no private key,
@@ -74,9 +74,11 @@ Independent direct reads confirmed:
 - the token and vault point to each other, with all three pilot roles assigned to the reviewed deployer;
 - pilot reserve and total supply both equal `100000000` base units (`100` tokens).
 
-Explorer source verification is not claimed complete in this record. RPC bytecode, parameters,
-relationships, roles, balances, and receipts have been verified; explorer publication remains a
-separate follow-up before issue #45 is closed.
+Blockscout reports the test reserve, token implementation, vault implementation, version registry,
+and factory as source-verified with Solidity `0.8.30` and optimizer runs `200`. The minimal pilot
+token and vault clones point to the verified implementation bytecode. RPC bytecode, constructor
+parameters, relationships, roles, balances, and receipts were independently checked before this
+record was proposed for merge.
 
 ## 1. Read-Only Preflight
 

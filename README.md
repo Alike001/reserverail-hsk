@@ -60,7 +60,9 @@ pilot pair, then deposited `100 tUSDC` and minted exactly `100 rrtUSD`.
 The test reserve is an explicitly labeled, valueless `tUSDC` contract. It is not bridged USDC.e,
 cannot be redeemed for money, and is not evidence of a funded HSK mainnet pilot. See the complete
 [testnet deployment record](./docs/hsk-testnet-deployment.md) and
-[machine-readable manifest](./config/deployments/hsk-testnet.json).
+[machine-readable manifest](./config/deployments/hsk-testnet.json). Blockscout reports the five
+non-proxy source contracts as verified; the pilot token and vault are minimal clones of the verified
+implementations.
 
 ## Architecture
 
