@@ -20,7 +20,9 @@ export type TransactionState =
       error: WalletOperationError;
       failedAt:
         Exclude<TransactionPhase, "confirmed" | "failed"> | "network-check";
+      hash?: Hash;
       phase: "failed";
+      receipt?: TransactionReceipt;
     };
 
 type ExecuteTransactionOptions<Result> = {
@@ -45,6 +47,8 @@ export async function executeHskTransaction<Result>({
   let failedAt:
     Exclude<TransactionPhase, "confirmed" | "failed"> | "network-check" =
     "network-check";
+  let hash: Hash | undefined;
+  let receipt: TransactionReceipt | undefined;
 
   try {
     const chainId = await getChainId();
@@ -52,11 +56,11 @@ export async function executeHskTransaction<Result>({
 
     failedAt = "awaiting-signature";
     onState({ phase: "awaiting-signature" });
-    const hash = await send();
+    hash = await send();
 
     failedAt = "pending";
     onState({ hash, phase: "pending" });
-    const receipt = await waitForReceipt(hash);
+    receipt = await waitForReceipt(hash);
     if (receipt.status !== "success") throw revertedTransactionError();
 
     failedAt = "verifying";
@@ -67,7 +71,13 @@ export async function executeHskTransaction<Result>({
     return { receipt, result };
   } catch (error) {
     const normalized = normalizeWalletError(error);
-    onState({ error: normalized, failedAt, phase: "failed" });
+    onState({
+      error: normalized,
+      failedAt,
+      ...(hash ? { hash } : {}),
+      phase: "failed",
+      ...(receipt ? { receipt } : {}),
+    });
     throw normalized;
   }
 }

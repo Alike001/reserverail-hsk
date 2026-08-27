@@ -1,8 +1,9 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState } from "react";
 import "./App.css";
 import { Header } from "./components/Header";
 import { LandingView } from "./components/LandingView";
 import { PilotRoute } from "./components/PilotRoute";
+import type { Address } from "./config/hsk";
 import { useRoute } from "./hooks/useRoute";
 
 const AccessAndEmergencyControls = lazy(() =>
@@ -11,8 +12,18 @@ const AccessAndEmergencyControls = lazy(() =>
   })),
 );
 
+const IssuerCreateView = lazy(() =>
+  import("./components/IssuerCreateView").then((m) => ({
+    default: m.IssuerCreateView,
+  })),
+);
+
 function App() {
   const { route, navigate } = useRoute();
+  const [managedPair, setManagedPair] = useState<{
+    token: Address;
+    vault: Address;
+  } | null>(null);
 
   return (
     <div className="app-container">
@@ -23,6 +34,22 @@ function App() {
           <LandingView onNavigate={navigate} />
         ) : route === "pilot" ? (
           <PilotRoute onNavigate={navigate} />
+        ) : route === "create" ? (
+          <Suspense
+            fallback={
+              <div className="pilot-state-card">
+                <h3>Loading Factory Studio…</h3>
+                <p>Connecting to stablecoin factory on HSK Mainnet…</p>
+              </div>
+            }
+          >
+            <IssuerCreateView
+              onSuccessNavigate={(pair) => {
+                setManagedPair(pair);
+                navigate("controls");
+              }}
+            />
+          </Suspense>
         ) : (
           <Suspense
             fallback={
@@ -32,7 +59,10 @@ function App() {
               </div>
             }
           >
-            <AccessAndEmergencyControls />
+            <AccessAndEmergencyControls
+              tokenAddressOverride={managedPair?.token}
+              vaultAddressOverride={managedPair?.vault}
+            />
           </Suspense>
         )}
       </main>
