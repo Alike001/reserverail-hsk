@@ -108,7 +108,8 @@ Use one label from each relevant group:
 - Type: `type:feature`, `type:bug`, `type:test`, `type:docs`, `type:security`, `type:chore`
 - Area: `area:contracts`, `area:web`, `area:hsk`, `area:devops`, `area:product`
 - Priority: `priority:p0`, `priority:p1`, `priority:p2`
-- State: `status:ready`, `status:in-review`, `status:blocked`, `status:needs-decision`
+- State: `status:ready`, `status:in-progress`, `status:in-review`, `status:blocked`,
+  `status:needs-decision`
 - Risk: `risk:funds`, `risk:privileged`, `risk:mainnet`
 
 ## Claiming Work

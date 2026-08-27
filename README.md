@@ -25,6 +25,8 @@ Deposit USDC.e → Mint → Distribute → Redeem
 - [Product surface map](./.thoughts/design/2026-08-27-product-surface-map.md)
 - [Interaction wireframe](./docs/interaction-wireframe.md)
 - [Threat model](./docs/threat-model.md)
+- [HSK Chain and USDC.e preflight](./docs/hsk-mainnet-preflight.md)
+- [Stablecoins track requirement matrix](./docs/hackathon-requirements.md)
 - [Build plan](./.thoughts/plans/2026-08-26-hsk-stablecoin-issuer-studio.md)
 - [Team workflow](./docs/team-workflow.md)
 - [GitHub backlog](./docs/github-backlog.md)
