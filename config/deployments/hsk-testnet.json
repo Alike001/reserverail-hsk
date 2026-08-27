@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "status": "undeployed",
+  "chainId": 133,
+  "network": "HSKChain Testnet",
+  "sourceCommit": null,
+  "deployer": "0xdE67A35B322e5A31e8215B5245CA4e48d7977F71",
+  "testReserveAsset": {
+    "kind": "explicit-test-token",
+    "name": "ReserveRail Test USDC",
+    "symbol": "tUSDC",
+    "decimals": 6,
+    "address": null
+  },
+  "tokenImplementation": null,
+  "vaultImplementation": null,
+  "versionRegistry": null,
+  "factory": null,
+  "pilot": {
+    "token": null,
+    "vault": null
+  },
+  "transactions": [],
+  "updatedAt": null
+}
