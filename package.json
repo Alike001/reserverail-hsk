@@ -16,8 +16,9 @@
     "format:check": "pnpm exec prettier --check apps/web && forge fmt --root contracts --check",
     "lint": "pnpm --dir apps/web lint",
     "typecheck": "pnpm --dir apps/web typecheck",
-    "test": "pnpm test:contracts",
+    "test": "pnpm test:web && pnpm test:contracts",
     "test:contracts": "forge test --root contracts",
+    "test:web": "pnpm --dir apps/web test",
     "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
   },
   "devDependencies": {

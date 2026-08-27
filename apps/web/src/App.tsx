@@ -1,4 +1,9 @@
 import "./App.css";
+import {
+  deploymentManifest,
+  hskMainnet,
+  toExplorerAddress,
+} from "./config/hsk";
 
 function App() {
   return (
@@ -7,7 +12,9 @@ function App() {
         <a className="wordmark" href="/">
           ReserveRail
         </a>
-        <span>Built on HSK Chain</span>
+        <span>
+          {hskMainnet.name} · {hskMainnet.id}
+        </span>
       </nav>
 
       <section className="hero">
@@ -26,9 +33,15 @@ function App() {
         </ol>
 
         <div className="actions">
-          <span className="disabled-action" aria-disabled="true">
-            Live pilot awaiting deployment
-          </span>
+          {deploymentManifest.status === "undeployed" ? (
+            <span className="disabled-action" aria-disabled="true">
+              Live pilot awaiting deployment
+            </span>
+          ) : (
+            <a href={toExplorerAddress(deploymentManifest.pilot.token)}>
+              Inspect live pilot
+            </a>
+          )}
           <a href="https://github.com/Alike001/reserverail-hsk">
             Inspect the public repository
           </a>
