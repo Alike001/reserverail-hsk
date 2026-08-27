@@ -8,15 +8,15 @@
 Deposit USDC.e → Mint the same amount → Distribute → Redeem 1:1
 ```
 
-ReserveRail is an unaudited, low-value hackathon pilot. The product and contract lifecycle are implemented, but the checked mainnet manifest is still marked **undeployed**. The interface never substitutes fabricated balances, addresses, or transaction receipts while deployment evidence is unavailable.
+ReserveRail is an unaudited, low-value hackathon pilot. The product and contract lifecycle are implemented, and a complete ten-transaction rehearsal is deployed on HSKChain Testnet. The checked mainnet manifest remains **undeployed**, so the hosted product does not present testnet state as mainnet evidence or substitute fabricated balances, addresses, or receipts.
 
 ## Run It in 30 Seconds
 
 **Hosted product:** [https://alike001.github.io/reserverail-hsk/](https://alike001.github.io/reserverail-hsk/)
 
-The GitHub Pages workflow publishes this URL only from reviewed changes merged to `main`. Until
-the first successful Pages deployment is visible, use the local startup path below and do not
-present the URL as live evidence.
+The reviewed GitHub Pages workflow publishes this URL only from changes merged to `main`. The
+site is live over HTTPS; contract-writing actions remain disabled while the checked HSK mainnet
+manifest is undeployed.
 
 Prerequisites: Node.js 22.12+, pnpm 10.33.1, Foundry 1.7+, and MetaMask.
 
@@ -45,6 +45,24 @@ The application targets HSK Chain mainnet (chain ID `177`) and uses HSK as its g
 | HSK Chain Testnet |    `133` | `https://testnet.hsk.xyz` | [Testnet explorer](https://testnet-explorer.hsk.xyz) |
 
 The checked network values and live-RPC preflight are documented in [HSK Chain and USDC.e preflight](./docs/hsk-mainnet-preflight.md). The mainnet application reads addresses only from the reviewed [deployment manifest](./config/deployments/hsk-mainnet.json).
+
+### Verified HSKChain Testnet rehearsal
+
+The reviewed deployment at source commit `ec3dfcd058e389a3f8168b3931396a116ef17263`
+completed ten successful HSKChain Testnet transactions. It deployed the reusable platform and one
+pilot pair, then deposited `100 tUSDC` and minted exactly `100 rrtUSD`.
+
+- Factory: [`0x6a613aDfF0aec888E2991c51Bc7E2F13582Dac45`](https://testnet-explorer.hsk.xyz/address/0x6a613aDfF0aec888E2991c51Bc7E2F13582Dac45)
+- Pilot token: [`0x6B4a40eEA31B5d6d343c2283ddDF0793523fA44C`](https://testnet-explorer.hsk.xyz/address/0x6B4a40eEA31B5d6d343c2283ddDF0793523fA44C)
+- Pilot vault: [`0xDFc5332F675584603e0f845Ad59C91620b814365`](https://testnet-explorer.hsk.xyz/address/0xDFc5332F675584603e0f845Ad59C91620b814365)
+- Final deposit/mint: [`0x792ce5dde99e23098e6ea1a5beccd6e888ec293db76588a5bd6797f025461b5f`](https://testnet-explorer.hsk.xyz/tx/0x792ce5dde99e23098e6ea1a5beccd6e888ec293db76588a5bd6797f025461b5f)
+
+The test reserve is an explicitly labeled, valueless `tUSDC` contract. It is not bridged USDC.e,
+cannot be redeemed for money, and is not evidence of a funded HSK mainnet pilot. See the complete
+[testnet deployment record](./docs/hsk-testnet-deployment.md) and
+[machine-readable manifest](./config/deployments/hsk-testnet.json). Blockscout reports the five
+non-proxy source contracts as verified; the pilot token and vault are minimal clones of the verified
+implementations.
 
 ## Architecture
 
@@ -89,6 +107,7 @@ Pull requests must pass web lint/typecheck/test/build, Foundry formatting/build/
 
 - [Stablecoins-track requirements and judging evidence](./docs/hackathon-requirements.md)
 - [HSK mainnet preflight](./docs/hsk-mainnet-preflight.md)
+- [Verified HSK testnet deployment](./docs/hsk-testnet-deployment.md)
 - [HSK USDC.e fork proof](./docs/hsk-usdce-fork-proof.md)
 - [Contract architecture](./docs/contract-architecture.md)
 - [Threat model](./docs/threat-model.md)
@@ -97,7 +116,7 @@ Pull requests must pass web lint/typecheck/test/build, Foundry formatting/build/
 - [Demo Day showcase and rehearsal script](./docs/demo-day-showcase.md)
 - [Research context](./context/README.md)
 
-Verified deployment addresses, transaction receipts, hosted product URL, and demo video will be added only after those artifacts exist and have been reviewed.
+Mainnet deployment addresses, funded lifecycle receipts, and a demo video will be added only after those artifacts exist and have been reviewed. The hosted product and testnet rehearsal evidence above are already public.
 
 ## Security and Limitations
 

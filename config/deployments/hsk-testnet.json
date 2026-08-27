@@ -1,25 +1,81 @@
 {
   "schemaVersion": 1,
-  "status": "undeployed",
+  "status": "deployed",
   "chainId": 133,
   "network": "HSKChain Testnet",
-  "sourceCommit": null,
+  "sourceCommit": "ec3dfcd058e389a3f8168b3931396a116ef17263",
   "deployer": "0xdE67A35B322e5A31e8215B5245CA4e48d7977F71",
   "testReserveAsset": {
     "kind": "explicit-test-token",
     "name": "ReserveRail Test USDC",
     "symbol": "tUSDC",
     "decimals": 6,
-    "address": null
+    "address": "0x90d3E5AEe13d444ec0679BdD3663deE823a3959f"
   },
-  "tokenImplementation": null,
-  "vaultImplementation": null,
-  "versionRegistry": null,
-  "factory": null,
+  "implementationVersion": 1,
+  "tokenImplementation": "0x85b6DcB049E033261005D7f5b7E2F059C2166a2e",
+  "vaultImplementation": "0x9f10b266F90638fC058e0891901082Fe9eccD8EA",
+  "versionRegistry": "0x275707B758B9957803cA09d9FCfA9306F26734a8",
+  "factory": "0x6a613aDfF0aec888E2991c51Bc7E2F13582Dac45",
   "pilot": {
-    "token": null,
-    "vault": null
+    "name": "ReserveRail Test USD",
+    "symbol": "rrtUSD",
+    "token": "0x6B4a40eEA31B5d6d343c2283ddDF0793523fA44C",
+    "vault": "0xDFc5332F675584603e0f845Ad59C91620b814365",
+    "reserveBaseUnits": "100000000",
+    "supplyBaseUnits": "100000000"
   },
-  "transactions": [],
-  "updatedAt": null
+  "transactions": [
+    {
+      "step": "deploy-test-reserve",
+      "hash": "0x2772471f4d8dcfbe6f08d21aff65ba5c1ca61a5d2cff91da401667a09772a2f4",
+      "blockNumber": 32325512
+    },
+    {
+      "step": "deploy-token-implementation",
+      "hash": "0x9a18fd4234d4bcce31d322202363c1bfd19e256272f162fe96b0073f6b805383",
+      "blockNumber": 32325699
+    },
+    {
+      "step": "deploy-vault-implementation",
+      "hash": "0x38a1044fc9e42c8b07f6ec2c7ed46c88ca80348e6a6380c9c84c8ee460377d82",
+      "blockNumber": 32325743
+    },
+    {
+      "step": "deploy-version-registry",
+      "hash": "0x1a347bb817fe2bcc1b1d2e35c47ee14c91b83dcd53bfd6dfd75d440e9c0f31f4",
+      "blockNumber": 32325760
+    },
+    {
+      "step": "register-version-1",
+      "hash": "0x670f756a0517b12ca93c45e78e92691223fb1bfd1568a0e497d10bc019f2b062",
+      "blockNumber": 32325778
+    },
+    {
+      "step": "activate-version-1",
+      "hash": "0xffb68441f00333d3094a6101ac642f412f1671e82e434d6fe1f63166be1b0c34",
+      "blockNumber": 32325794
+    },
+    {
+      "step": "deploy-factory",
+      "hash": "0x89025f974b7653af09cdfe0c414f47c626184627b5be50b4f01dd81c25b056b5",
+      "blockNumber": 32325814
+    },
+    {
+      "step": "create-pilot-pair",
+      "hash": "0x6ad5b00680468350273752b76ded459f51a78c459e759aae4ba6bd9f49adc38a",
+      "blockNumber": 32325825
+    },
+    {
+      "step": "approve-test-reserve",
+      "hash": "0xc0c82e43cad1e0750d6071aaab30f9c206202660a262ad8b23bcd0ba5d91c419",
+      "blockNumber": 32325860
+    },
+    {
+      "step": "deposit-and-mint",
+      "hash": "0x792ce5dde99e23098e6ea1a5beccd6e888ec293db76588a5bd6797f025461b5f",
+      "blockNumber": 32325874
+    }
+  ],
+  "updatedAt": "2026-08-27T13:46:44Z"
 }

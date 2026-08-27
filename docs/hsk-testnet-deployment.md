@@ -1,8 +1,9 @@
 # HSK Testnet Deployment Rehearsal
 
-Status: **simulation passed; no transactions broadcast yet**
+Status: **deployed, independently reconciled, and source-verified on HSKChain Testnet**
 
-This runbook deploys the complete ReserveRail pilot lifecycle to HSKChain Testnet only. It uses
+This runbook records a ReserveRail deployment and reserve-backed mint rehearsal on HSKChain
+Testnet only. It uses
 the public deployer address `0xdE67A35B322e5A31e8215B5245CA4e48d7977F71`; no private key,
 seed phrase, password, or funded account is stored in the repository.
 
@@ -19,22 +20,66 @@ mainnet deployment must instead use the reviewed USDC.e address in
 
 ## Fixed Reviewed Parameters
 
-| Parameter | Value |
-| --- | --- |
-| Network | HSKChain Testnet |
-| Chain ID | `133` |
-| RPC | `https://testnet.hsk.xyz` |
-| Explorer | `https://testnet-explorer.hskchain.net` |
-| Deployer and pilot roles | `0xdE67A35B322e5A31e8215B5245CA4e48d7977F71` |
-| Implementation version | `1` |
-| Test reserve | `ReserveRail Test USDC (tUSDC)`, 6 decimals |
-| Initial test reserve supply | `1,000 tUSDC` |
-| Pilot backing and supply | `100 tUSDC` / `100 rrtUSD` |
-| Pilot token | `ReserveRail Test USD (rrtUSD)` |
+| Parameter                   | Value                                        |
+| --------------------------- | -------------------------------------------- |
+| Network                     | HSKChain Testnet                             |
+| Chain ID                    | `133`                                        |
+| RPC                         | `https://testnet.hsk.xyz`                    |
+| Explorer                    | `https://testnet-explorer.hskchain.net`      |
+| Deployer and pilot roles    | `0xdE67A35B322e5A31e8215B5245CA4e48d7977F71` |
+| Implementation version      | `1`                                          |
+| Test reserve                | `ReserveRail Test USDC (tUSDC)`, 6 decimals  |
+| Initial test reserve supply | `1,000 tUSDC`                                |
+| Pilot backing and supply    | `100 tUSDC` / `100 rrtUSD`                   |
+| Pilot token                 | `ReserveRail Test USD (rrtUSD)`              |
 
 The script submits ten ordered transactions: deploy test reserve, deploy token implementation,
 deploy vault implementation, deploy registry, register version, activate version, deploy factory,
 create pilot token/vault clones, approve the vault, and deposit/mint the backed pilot supply.
+
+## Verified Deployment Evidence
+
+The owner broadcast the reviewed script from source commit
+[`ec3dfcd058e389a3f8168b3931396a116ef17263`](https://github.com/Alike001/reserverail-hsk/commit/ec3dfcd058e389a3f8168b3931396a116ef17263)
+on 2026-08-27. All ten receipts independently returned status `1` through the HSK testnet RPC.
+The transactions landed between `2026-08-27T13:34:40Z` and `2026-08-27T13:46:44Z`.
+
+| Component              | Address                                                                                                                             |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Test reserve (`tUSDC`) | [`0x90d3E5AEe13d444ec0679BdD3663deE823a3959f`](https://testnet-explorer.hsk.xyz/address/0x90d3E5AEe13d444ec0679BdD3663deE823a3959f) |
+| Token implementation   | [`0x85b6DcB049E033261005D7f5b7E2F059C2166a2e`](https://testnet-explorer.hsk.xyz/address/0x85b6DcB049E033261005D7f5b7E2F059C2166a2e) |
+| Vault implementation   | [`0x9f10b266F90638fC058e0891901082Fe9eccD8EA`](https://testnet-explorer.hsk.xyz/address/0x9f10b266F90638fC058e0891901082Fe9eccD8EA) |
+| Version registry       | [`0x275707B758B9957803cA09d9FCfA9306F26734a8`](https://testnet-explorer.hsk.xyz/address/0x275707B758B9957803cA09d9FCfA9306F26734a8) |
+| Factory                | [`0x6a613aDfF0aec888E2991c51Bc7E2F13582Dac45`](https://testnet-explorer.hsk.xyz/address/0x6a613aDfF0aec888E2991c51Bc7E2F13582Dac45) |
+| Pilot token (`rrtUSD`) | [`0x6B4a40eEA31B5d6d343c2283ddDF0793523fA44C`](https://testnet-explorer.hsk.xyz/address/0x6B4a40eEA31B5d6d343c2283ddDF0793523fA44C) |
+| Pilot vault            | [`0xDFc5332F675584603e0f845Ad59C91620b814365`](https://testnet-explorer.hsk.xyz/address/0xDFc5332F675584603e0f845Ad59C91620b814365) |
+
+| Step                        |      Block | Confirmed transaction                                                                                                           |
+| --------------------------- | ---------: | ------------------------------------------------------------------------------------------------------------------------------- |
+| Deploy test reserve         | `32325512` | [`0x2772471f...72a2f4`](https://testnet-explorer.hsk.xyz/tx/0x2772471f4d8dcfbe6f08d21aff65ba5c1ca61a5d2cff91da401667a09772a2f4) |
+| Deploy token implementation | `32325699` | [`0x9a18fd42...805383`](https://testnet-explorer.hsk.xyz/tx/0x9a18fd4234d4bcce31d322202363c1bfd19e256272f162fe96b0073f6b805383) |
+| Deploy vault implementation | `32325743` | [`0x38a1044f...377d82`](https://testnet-explorer.hsk.xyz/tx/0x38a1044fc9e42c8b07f6ec2c7ed46c88ca80348e6a6380c9c84c8ee460377d82) |
+| Deploy registry             | `32325760` | [`0x1a347bb8...0f31f4`](https://testnet-explorer.hsk.xyz/tx/0x1a347bb817fe2bcc1b1d2e35c47ee14c91b83dcd53bfd6dfd75d440e9c0f31f4) |
+| Register version 1          | `32325778` | [`0x670f756a...f2b062`](https://testnet-explorer.hsk.xyz/tx/0x670f756a0517b12ca93c45e78e92691223fb1bfd1568a0e497d10bc019f2b062) |
+| Activate version 1          | `32325794` | [`0xffb68441...1b0c34`](https://testnet-explorer.hsk.xyz/tx/0xffb68441f00333d3094a6101ac642f412f1671e82e434d6fe1f63166be1b0c34) |
+| Deploy factory              | `32325814` | [`0x89025f97...056b5`](https://testnet-explorer.hsk.xyz/tx/0x89025f974b7653af09cdfe0c414f47c626184627b5be50b4f01dd81c25b056b5)  |
+| Create pilot pair           | `32325825` | [`0x6ad5b006...dc38a`](https://testnet-explorer.hsk.xyz/tx/0x6ad5b00680468350273752b76ded459f51a78c459e759aae4ba6bd9f49adc38a)  |
+| Approve `100 tUSDC`         | `32325860` | [`0xc0c82e43...1c419`](https://testnet-explorer.hsk.xyz/tx/0xc0c82e43cad1e0750d6071aaab30f9c206202660a262ad8b23bcd0ba5d91c419)  |
+| Deposit and mint            | `32325874` | [`0x792ce5dd...61b5f`](https://testnet-explorer.hsk.xyz/tx/0x792ce5dde99e23098e6ea1a5beccd6e888ec293db76588a5bd6797f025461b5f)  |
+
+Independent direct reads confirmed:
+
+- the test reserve reports six decimals, `isTestAsset() == true`, and the reviewed deployer as owner;
+- registry version `1` is active and maps to the exact locked token and vault implementations;
+- the factory points to that registry and reserve and reports one issuer;
+- the token and vault point to each other, with all three pilot roles assigned to the reviewed deployer;
+- pilot reserve and total supply both equal `100000000` base units (`100` tokens).
+
+Blockscout reports the test reserve, token implementation, vault implementation, version registry,
+and factory as source-verified with Solidity `0.8.30` and optimizer runs `200`. The minimal pilot
+token and vault clones point to the verified implementation bytecode. RPC bytecode, constructor
+parameters, relationships, roles, balances, and receipts were independently checked before this
+record was proposed for merge.
 
 ## 1. Read-Only Preflight
 
@@ -107,8 +152,8 @@ After all ten receipts succeed:
 
 1. Copy real addresses and transaction hashes from
    `contracts/broadcast/DeployHskTestnet.s.sol/133/run-latest.json`.
-2. Independently confirm every address has code using `cast code ADDRESS --rpc-url
-   https://testnet.hsk.xyz`.
+2. Independently confirm every address has code using
+   `cast code ADDRESS --rpc-url https://testnet.hsk.xyz`.
 3. Compare registry, factory, token, vault, reserve, roles, supply, and reserve balance with direct
    `cast call` reads.
 4. Verify the five non-proxy source contracts using Foundry's Blockscout verifier, compiler
