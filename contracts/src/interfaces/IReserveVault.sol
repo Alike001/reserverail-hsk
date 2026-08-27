@@ -3,9 +3,10 @@ pragma solidity >=0.8.30;
 
 interface IReserveVault {
     event Initialized(
+        address indexed factory,
         address indexed reserveAsset,
         address indexed issuerToken,
-        address indexed administrator,
+        address administrator,
         address reserveOperator,
         address pauser
     );
@@ -37,10 +38,11 @@ interface IReserveVault {
 
     function depositAndMint(uint256 reserveAmount, address recipient) external;
     function redeem(uint256 tokenAmount, address recipient) external;
-    function pauseMinting() external;
-    function unpauseMinting() external;
+    function pause() external;
+    function unpause() external;
     function rotateRole(bytes32 role, address newAccount) external;
 
+    function factory() external view returns (address);
     function reserveAsset() external view returns (address);
     function issuerToken() external view returns (address);
     function administrator() external view returns (address);
@@ -48,5 +50,5 @@ interface IReserveVault {
     function pauser() external view returns (address);
     function reserveBalance() external view returns (uint256);
     function redeemableSupply() external view returns (uint256);
-    function isMintingPaused() external view returns (bool);
+    function operationallyPaused() external view returns (bool);
 }
