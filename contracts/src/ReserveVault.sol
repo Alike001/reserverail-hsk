@@ -12,6 +12,9 @@ interface IERC20Reserve {
 
 contract ReserveVault {
     uint8 public constant DECIMALS = 6;
+    bytes32 public constant ADMINISTRATOR_ROLE = keccak256("ADMINISTRATOR_ROLE");
+    bytes32 public constant RESERVE_OPERATOR_ROLE = keccak256("RESERVE_OPERATOR_ROLE");
+    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
     address public factory;
     address public reserveAsset;
@@ -34,6 +37,11 @@ contract ReserveVault {
     error InsufficientReserve();
     error TransferFailed();
     error Reentrancy();
+    error OperationallyPaused();
+    error AlreadyPaused();
+    error NotPaused();
+    error InvalidRole();
+    error RoleUnchanged();
 
     event Initialized(
         address indexed factory,
@@ -95,7 +103,7 @@ contract ReserveVault {
 
     function depositAndMint(uint256 reserveAmount, address recipient) external nonReentrant {
         if (msg.sender != reserveOperator) revert Unauthorized();
-        if (operationallyPaused) revert Unauthorized();
+        if (operationallyPaused) revert OperationallyPaused();
         if (reserveAmount == 0) revert ZeroAmount();
         if (recipient == address(0)) revert ZeroAddress();
 
@@ -133,6 +141,48 @@ contract ReserveVault {
         ) revert InvalidAmountPaid();
 
         emit Redeemed(msg.sender, issuerToken, recipient, tokenAmount, tokenAmount);
+    }
+
+    function pause() external {
+        if (msg.sender != pauser && msg.sender != administrator) revert Unauthorized();
+        if (operationallyPaused) revert AlreadyPaused();
+
+        operationallyPaused = true;
+        IssuerStablecoin(issuerToken).setOperationalPause(true);
+        emit Paused(msg.sender);
+    }
+
+    function unpause() external {
+        if (msg.sender != administrator) revert Unauthorized();
+        if (!operationallyPaused) revert NotPaused();
+
+        operationallyPaused = false;
+        IssuerStablecoin(issuerToken).setOperationalPause(false);
+        emit Unpaused(msg.sender);
+    }
+
+    function rotateRole(bytes32 role, address newAccount) external {
+        if (msg.sender != administrator) revert Unauthorized();
+        if (newAccount == address(0)) revert ZeroAddress();
+
+        address previousAccount;
+        if (role == ADMINISTRATOR_ROLE) {
+            previousAccount = administrator;
+            if (newAccount == previousAccount) revert RoleUnchanged();
+            administrator = newAccount;
+        } else if (role == RESERVE_OPERATOR_ROLE) {
+            previousAccount = reserveOperator;
+            if (newAccount == previousAccount) revert RoleUnchanged();
+            reserveOperator = newAccount;
+        } else if (role == PAUSER_ROLE) {
+            previousAccount = pauser;
+            if (newAccount == previousAccount) revert RoleUnchanged();
+            pauser = newAccount;
+        } else {
+            revert InvalidRole();
+        }
+
+        emit RoleRotated(role, previousAccount, newAccount);
     }
 
     function reserveBalance() external view returns (uint256) {

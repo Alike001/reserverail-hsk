@@ -73,6 +73,50 @@ contract IssuerStablecoinTest {
         require(!arbitraryCaller.tryBurn(token, HOLDER, 1), "unauthorized burn succeeded");
     }
 
+    function test_VaultOnlyPauseBlocksMintAndTransfersButNotBurnOrApproval() public {
+        IssuerStablecoin token = _newToken(ADMINISTRATOR, address(this));
+        IssuerStablecoinUnauthorizedCaller arbitraryCaller = new IssuerStablecoinUnauthorizedCaller();
+        token.mint(HOLDER, 1_000_000);
+
+        require(!arbitraryCaller.trySetOperationalPause(token, true), "direct pause succeeded");
+        token.setOperationalPause(true);
+        require(token.paused(), "token did not pause");
+        require(!arbitraryCaller.tryTransfer(token, RECIPIENT, 0), "paused zero transfer succeeded");
+
+        (bool pausedMint,) = address(token).call(abi.encodeCall(token.mint, (HOLDER, 1)));
+        require(!pausedMint, "paused mint succeeded");
+        require(token.approve(RECIPIENT, 123), "pause blocked approval");
+
+        token.burn(HOLDER, 250_000);
+        require(token.balanceOf(HOLDER) == 750_000, "pause blocked burn");
+        token.setOperationalPause(false);
+        require(!token.paused(), "token did not unpause");
+        require(!arbitraryCaller.trySetOperationalPause(token, true), "direct pause succeeded after unpause");
+    }
+
+    function test_AdministratorRotationRejectsUnauthorizedInvalidZeroAndNoOp() public {
+        IssuerStablecoin token = _newToken(address(this), address(this));
+        IssuerStablecoinUnauthorizedCaller nextAdministrator = new IssuerStablecoinUnauthorizedCaller();
+        bytes32 administratorRole = token.ADMINISTRATOR_ROLE();
+
+        require(
+            !nextAdministrator.tryRotateRole(token, administratorRole, address(nextAdministrator)),
+            "unauthorized rotation succeeded"
+        );
+        (bool invalidRole,) = address(token).call(abi.encodeCall(token.rotateRole, (bytes32(uint256(1)), RECIPIENT)));
+        require(!invalidRole, "unknown role accepted");
+        (bool zeroAccount,) = address(token).call(abi.encodeCall(token.rotateRole, (administratorRole, address(0))));
+        require(!zeroAccount, "zero administrator accepted");
+        (bool sameAccount,) = address(token).call(abi.encodeCall(token.rotateRole, (administratorRole, address(this))));
+        require(!sameAccount, "same administrator accepted");
+
+        token.rotateRole(administratorRole, address(nextAdministrator));
+        require(token.administrator() == address(nextAdministrator), "administrator not rotated");
+        (bool previousAdministrator,) =
+            address(token).call(abi.encodeCall(token.rotateRole, (administratorRole, address(this))));
+        require(!previousAdministrator, "previous administrator retained authority");
+    }
+
     function test_TransfersAllowancesAndZeroValueUseStandardBehavior() public {
         IssuerStablecoin token = _newToken(ADMINISTRATOR, address(this));
         token.mint(address(this), 1_000_000);
@@ -212,6 +256,16 @@ contract IssuerStablecoinUnauthorizedCaller {
         returns (bool)
     {
         (bool succeeded,) = address(token).call(abi.encodeCall(token.transferFrom, (holder, recipient, amount)));
+        return succeeded;
+    }
+
+    function trySetOperationalPause(IssuerStablecoin token, bool paused_) external returns (bool) {
+        (bool succeeded,) = address(token).call(abi.encodeCall(token.setOperationalPause, (paused_)));
+        return succeeded;
+    }
+
+    function tryRotateRole(IssuerStablecoin token, bytes32 role, address newAccount) external returns (bool) {
+        (bool succeeded,) = address(token).call(abi.encodeCall(token.rotateRole, (role, newAccount)));
         return succeeded;
     }
 }
