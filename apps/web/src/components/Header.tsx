@@ -70,6 +70,14 @@ export function Header({ currentRoute, onNavigate }: HeaderProps) {
           </button>
           <button
             type="button"
+            className={`nav-item ${currentRoute === "create" ? "active" : ""}`}
+            onClick={() => onNavigate("create")}
+            aria-current={currentRoute === "create" ? "page" : undefined}
+          >
+            Issue Token
+          </button>
+          <button
+            type="button"
             className={`nav-item ${currentRoute === "controls" ? "active" : ""}`}
             onClick={() => onNavigate("controls")}
             aria-current={currentRoute === "controls" ? "page" : undefined}
