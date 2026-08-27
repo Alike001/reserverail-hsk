@@ -7,6 +7,7 @@ contract IssuerStablecoin {
     string public name;
     string public symbol;
     uint256 public totalSupply;
+    address public factory;
     address public administrator;
     address public vault;
     bool public initialized;
@@ -25,29 +26,30 @@ contract IssuerStablecoin {
     event Approval(address indexed owner, address indexed spender, uint256 value);
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Initialized(
-        string name,
-        string symbol,
-        address indexed administrator,
-        address indexed vault
+        string name, string symbol, address indexed factory, address indexed administrator, address indexed vault
     );
 
-    function initialize(
-        string calldata name_,
-        string calldata symbol_,
-        address administrator_,
-        address vault_
-    ) external {
+    constructor() {
+        // Production instances are minimal proxies. Locking the implementation prevents it from
+        // ever being initialized and presented as a registered issuer token.
+        initialized = true;
+    }
+
+    function initialize(string calldata name_, string calldata symbol_, address administrator_, address vault_)
+        external
+    {
         if (initialized) revert AlreadyInitialized();
         if (administrator_ == address(0) || vault_ == address(0)) revert ZeroAddress();
         if (bytes(name_).length == 0 || bytes(symbol_).length == 0) revert InvalidMetadata();
 
         name = name_;
         symbol = symbol_;
+        factory = msg.sender;
         administrator = administrator_;
         vault = vault_;
         initialized = true;
 
-        emit Initialized(name_, symbol_, administrator_, vault_);
+        emit Initialized(name_, symbol_, msg.sender, administrator_, vault_);
     }
 
     function approve(address spender, uint256 amount) external returns (bool) {
@@ -99,8 +101,7 @@ contract IssuerStablecoin {
     }
 
     function _transfer(address from, address to, uint256 amount) internal {
-        if (to == address(0)) revert ZeroAddress();
-        if (amount == 0) revert ZeroAmount();
+        if (from == address(0) || to == address(0)) revert ZeroAddress();
         if (balanceOf[from] < amount) revert InsufficientBalance();
 
         balanceOf[from] -= amount;
