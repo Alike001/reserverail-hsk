@@ -28,19 +28,16 @@ contract IssuerStablecoinTest {
 
     function test_RejectsInvalidInitialization() public {
         IssuerStablecoin token = new IssuerStablecoin();
-        (bool zeroAdministrator,) = address(token).call(
-            abi.encodeCall(token.initialize, ("Rail USD", "rUSD", address(0), VAULT))
-        );
+        (bool zeroAdministrator,) =
+            address(token).call(abi.encodeCall(token.initialize, ("Rail USD", "rUSD", address(0), VAULT)));
         require(!zeroAdministrator, "zero administrator accepted");
 
-        (bool zeroVault,) = address(token).call(
-            abi.encodeCall(token.initialize, ("Rail USD", "rUSD", ADMINISTRATOR, address(0)))
-        );
+        (bool zeroVault,) =
+            address(token).call(abi.encodeCall(token.initialize, ("Rail USD", "rUSD", ADMINISTRATOR, address(0))));
         require(!zeroVault, "zero vault accepted");
 
-        (bool emptyMetadata,) = address(token).call(
-            abi.encodeCall(token.initialize, ("", "rUSD", ADMINISTRATOR, VAULT))
-        );
+        (bool emptyMetadata,) =
+            address(token).call(abi.encodeCall(token.initialize, ("", "rUSD", ADMINISTRATOR, VAULT)));
         require(!emptyMetadata, "empty metadata accepted");
     }
 
@@ -83,6 +80,7 @@ contract IssuerStablecoinTest {
         require(second.balanceOf(HOLDER) == 0, "second balance changed");
     }
 }
+
 
 contract IssuerStablecoinUnauthorizedCaller {
     function tryMint(IssuerStablecoin token, address recipient, uint256 amount) external returns (bool) {
