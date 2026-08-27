@@ -8,6 +8,9 @@ function getRouteFromLocation(): RouteState {
   if (hash === "#pilot" || path === "/pilot") {
     return "pilot";
   }
+  if (hash === "#controls" || path === "/controls") {
+    return "controls";
+  }
   return "landing";
 }
 
@@ -33,7 +36,12 @@ export function useRoute(): {
   const navigate = useCallback((newRoute: RouteState) => {
     setRoute(newRoute);
     if (typeof window !== "undefined") {
-      const targetHash = newRoute === "pilot" ? "#pilot" : "#landing";
+      const targetHash =
+        newRoute === "pilot"
+          ? "#pilot"
+          : newRoute === "controls"
+            ? "#controls"
+            : "#landing";
       if (window.location.hash !== targetHash) {
         window.history.pushState({}, "", targetHash);
       }

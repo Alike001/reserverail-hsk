@@ -1,8 +1,15 @@
+import { lazy, Suspense } from "react";
 import "./App.css";
 import { Header } from "./components/Header";
 import { LandingView } from "./components/LandingView";
 import { PilotRoute } from "./components/PilotRoute";
 import { useRoute } from "./hooks/useRoute";
+
+const AccessAndEmergencyControls = lazy(() =>
+  import("./components/AccessAndEmergencyControls").then((m) => ({
+    default: m.AccessAndEmergencyControls,
+  })),
+);
 
 function App() {
   const { route, navigate } = useRoute();
@@ -14,8 +21,19 @@ function App() {
       <main className="main-content">
         {route === "landing" ? (
           <LandingView onNavigate={navigate} />
-        ) : (
+        ) : route === "pilot" ? (
           <PilotRoute onNavigate={navigate} />
+        ) : (
+          <Suspense
+            fallback={
+              <div className="pilot-state-card">
+                <h3>Loading Controls…</h3>
+                <p>Connecting to on-chain technical policy controls…</p>
+              </div>
+            }
+          >
+            <AccessAndEmergencyControls />
+          </Suspense>
         )}
       </main>
 
