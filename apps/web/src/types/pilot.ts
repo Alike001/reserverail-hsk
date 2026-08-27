@@ -17,17 +17,33 @@ export type PilotProofData =
   | { status: "undeployed" }
   | { status: "error"; errorMessage?: string }
   | {
+      status: "stale";
+      errorMessage: string;
+      lastConfirmedBlock: string;
+      updatedAt: string;
+    }
+  | {
       status: "deployed";
       tokenAddress: Address;
       vaultAddress: Address;
       factoryAddress: Address;
+      reserveAssetAddress: Address;
+      issuerAddress: Address;
+      tokenAdministrator: Address;
+      vaultAdministrator: Address;
+      reserveOperator: Address;
+      pauser: Address;
       tokenName: string;
       tokenSymbol: string;
       totalSupply: string;
       vaultReserve: string;
-      coverageRatio: string;
+      coverageRatio: string | null;
+      backingState: string;
       operationalState: string;
-      lastConfirmedBlock: number;
+      version: string;
+      versionStatus: string;
+      lastConfirmedBlock: string;
+      snapshotAgeSeconds: string;
       updatedAt: string;
       transactions: ProofTransaction[];
     };
