@@ -3,8 +3,10 @@ import "./App.css";
 import { Header } from "./components/Header";
 import { LandingView } from "./components/LandingView";
 import { PilotRoute } from "./components/PilotRoute";
-import type { Address } from "./config/hsk";
+import { deploymentManifest, type Address } from "./config/hsk";
+import { usePilotProof } from "./hooks/usePilotProof";
 import { useRoute } from "./hooks/useRoute";
+import type { RouteState } from "./types/pilot";
 
 const AccessAndEmergencyControls = lazy(() =>
   import("./components/AccessAndEmergencyControls").then((m) => ({
@@ -39,7 +41,7 @@ function App() {
         {route === "landing" ? (
           <LandingView onNavigate={navigate} />
         ) : route === "pilot" ? (
-          <PilotRoute onNavigate={navigate} />
+          <LivePilotRoute onNavigate={navigate} />
         ) : route === "create" ? (
           <Suspense
             fallback={
@@ -100,6 +102,21 @@ function App() {
         </div>
       </footer>
     </div>
+  );
+}
+
+function LivePilotRoute({
+  onNavigate,
+}: {
+  onNavigate: (route: RouteState) => void;
+}) {
+  const { proofData, retry } = usePilotProof(deploymentManifest);
+  return (
+    <PilotRoute
+      onNavigate={onNavigate}
+      proofData={proofData}
+      onRetryProof={retry}
+    />
   );
 }
 

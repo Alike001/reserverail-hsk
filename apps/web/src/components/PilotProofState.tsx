@@ -7,10 +7,15 @@ import type { PilotProofData } from "../types/pilot";
 
 interface PilotProofStateProps {
   manifest: Extract<typeof deploymentManifest, { status: "deployed" }>;
+  onRetry?: () => void;
   proofData?: PilotProofData;
 }
 
-export function PilotProofState({ manifest, proofData }: PilotProofStateProps) {
+export function PilotProofState({
+  manifest,
+  onRetry,
+  proofData,
+}: PilotProofStateProps) {
   if (proofData?.status === "loading") {
     return (
       <div className="pilot-state-card pilot-loading" role="status">
@@ -22,18 +27,32 @@ export function PilotProofState({ manifest, proofData }: PilotProofStateProps) {
 
   if (!proofData || proofData.status !== "deployed") {
     const message =
-      proofData?.status === "error"
+      proofData?.status === "error" || proofData?.status === "stale"
         ? proofData.errorMessage
         : "No verified proof reader has supplied current HSK data.";
 
     return (
       <div className="pilot-state-card pilot-error" role="alert">
-        <h2>Live HSK data unavailable</h2>
+        <h2>
+          {proofData?.status === "stale"
+            ? "HSK proof snapshot is stale"
+            : "Live HSK data unavailable"}
+        </h2>
         <p>{message ?? "Unable to read pilot proof data from HSK RPC."}</p>
+        {proofData?.status === "stale" ? (
+          <p className="proof-freshness code-font">
+            Safe block #{proofData.lastConfirmedBlock} · {proofData.updatedAt}
+          </p>
+        ) : null}
         <p className="error-note">
           Financial values are hidden instead of showing defaults, fixtures,
           stale coverage, or inferred operational state.
         </p>
+        {onRetry ? (
+          <button type="button" className="btn-secondary" onClick={onRetry}>
+            Retry safe-block proof
+          </button>
+        ) : null}
       </div>
     );
   }
@@ -49,8 +68,38 @@ export function PilotProofState({ manifest, proofData }: PilotProofStateProps) {
           label="Total Supply"
           value={`${proofData.totalSupply} ${proofData.tokenSymbol}`}
         />
-        <Metric label="Coverage" value={`${proofData.coverageRatio}%`} />
+        <Metric
+          label="Coverage"
+          value={
+            proofData.coverageRatio === null
+              ? "N/A · no supply"
+              : `${proofData.coverageRatio}%`
+          }
+        />
         <Metric label="Operational State" value={proofData.operationalState} />
+      </div>
+
+      <div className="proof-snapshot-box">
+        <div>
+          <span className="metric-label">Backing state</span>
+          <strong>{proofData.backingState}</strong>
+        </div>
+        <div>
+          <span className="metric-label">Verified safe snapshot</span>
+          <strong className="code-font">
+            Block #{proofData.lastConfirmedBlock}
+          </strong>
+          <span className="empty-state-text">
+            {proofData.updatedAt} · {proofData.snapshotAgeSeconds}s old when
+            read
+          </span>
+        </div>
+        <div>
+          <span className="metric-label">Factory version</span>
+          <strong>
+            v{proofData.version} · {proofData.versionStatus}
+          </strong>
+        </div>
       </div>
 
       <div className="contract-links-box">
@@ -59,6 +108,30 @@ export function PilotProofState({ manifest, proofData }: PilotProofStateProps) {
           <ContractLink label="Factory" address={manifest.factory} />
           <ContractLink label="Token" address={manifest.pilot.token} />
           <ContractLink label="Vault" address={manifest.pilot.vault} />
+          <ContractLink
+            label="USDC.e reserve"
+            address={proofData.reserveAssetAddress}
+          />
+          <ContractLink label="Issuer" address={proofData.issuerAddress} />
+        </ul>
+      </div>
+
+      <div className="contract-links-box">
+        <h2>Current on-chain roles</h2>
+        <ul>
+          <ContractLink
+            label="Token administrator"
+            address={proofData.tokenAdministrator}
+          />
+          <ContractLink
+            label="Vault administrator"
+            address={proofData.vaultAdministrator}
+          />
+          <ContractLink
+            label="Reserve operator"
+            address={proofData.reserveOperator}
+          />
+          <ContractLink label="Pauser" address={proofData.pauser} />
         </ul>
       </div>
 
@@ -83,9 +156,21 @@ export function PilotProofState({ manifest, proofData }: PilotProofStateProps) {
           </ul>
         ) : (
           <p className="empty-state-text">
-            No proof transactions recorded yet.
+            No verified lifecycle transaction hashes are configured. No
+            transaction receipts are invented; the metrics above come from
+            direct contract reads at the displayed safe block.
           </p>
         )}
+      </div>
+
+      <div className="truth-commitment-box">
+        <h3>Risk disclosure</h3>
+        <p>
+          This is an unaudited low-value pilot. ReserveRail inherits USDC.e
+          bridge and issuer risks, and privileged roles remain visible above.
+          The page proves contract state; it does not make a legal compliance or
+          solvency guarantee.
+        </p>
       </div>
     </section>
   );
