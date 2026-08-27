@@ -12,6 +12,12 @@ ReserveRail is an unaudited, low-value hackathon pilot. The product and contract
 
 ## Run It in 30 Seconds
 
+**Hosted product:** [https://alike001.github.io/reserverail-hsk/](https://alike001.github.io/reserverail-hsk/)
+
+The GitHub Pages workflow publishes this URL only from reviewed changes merged to `main`. Until
+the first successful Pages deployment is visible, use the local startup path below and do not
+present the URL as live evidence.
+
 Prerequisites: Node.js 22.12+, pnpm 10.33.1, Foundry 1.7+, and MetaMask.
 
 ```bash
@@ -33,10 +39,10 @@ Open the local URL printed by Vite, connect MetaMask, and use the built-in netwo
 
 The application targets HSK Chain mainnet (chain ID `177`) and uses HSK as its gas token. Its configured reserve asset is the six-decimal bridged USDC (`USDC.e`) at [`0x054ed45810DbBAb8B27668922D110669c9D88D0a`](https://hashkey.blockscout.com/address/0x054ed45810DbBAb8B27668922D110669c9D88D0a). Testnet rehearsal uses HSK Chain testnet (chain ID `133`) before any low-value mainnet pilot.
 
-| Network | Chain ID | RPC | Explorer |
-| --- | ---: | --- | --- |
-| HSK Chain | `177` | `https://mainnet.hsk.xyz` | [Blockscout](https://hashkey.blockscout.com) |
-| HSK Chain Testnet | `133` | `https://testnet.hsk.xyz` | [Testnet explorer](https://testnet-explorer.hsk.xyz) |
+| Network           | Chain ID | RPC                       | Explorer                                             |
+| ----------------- | -------: | ------------------------- | ---------------------------------------------------- |
+| HSK Chain         |    `177` | `https://mainnet.hsk.xyz` | [Blockscout](https://hashkey.blockscout.com)         |
+| HSK Chain Testnet |    `133` | `https://testnet.hsk.xyz` | [Testnet explorer](https://testnet-explorer.hsk.xyz) |
 
 The checked network values and live-RPC preflight are documented in [HSK Chain and USDC.e preflight](./docs/hsk-mainnet-preflight.md). The mainnet application reads addresses only from the reviewed [deployment manifest](./config/deployments/hsk-mainnet.json).
 
