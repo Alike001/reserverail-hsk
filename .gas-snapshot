@@ -1,0 +1,3 @@
+CriticalPathGasTest:testGas_CreateIssuer() (gas: 649886)
+CriticalPathGasTest:testGas_DepositAndMint() (gas: 77835)
+CriticalPathGasTest:testGas_Redeem() (gas: 56793)
