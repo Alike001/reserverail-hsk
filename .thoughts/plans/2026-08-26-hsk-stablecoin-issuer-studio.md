@@ -1,5 +1,12 @@
 # Plan: ReserveRail
 
+> **2026-08-27 deadline override:** The official submission deadline is 14:00 WAT today. For
+> the judged build, execute only the P0 slice in
+> [the Phase 1 decision record](../../docs/phase-1-decisions.md): factory, isolated token/vault,
+> reserve-backed mint, standard transfer, redemption, essential roles/pause, public proof, and
+> real HSK mainnet evidence. Allowlist, batch, and Merkle-campaign steps below remain the
+> post-submission product roadmap unless the complete P0 lifecycle is already verified.
+
 ## Inputs
 
 - Participant's idea: create, mint, control, and distribute stablecoins on HSK Chain as a real

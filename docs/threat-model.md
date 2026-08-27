@@ -58,22 +58,28 @@ The MVP must preserve three truths:
 | T-21 | Recipient-list privacy leak | Do not upload raw CSVs to the server; generate proofs locally where feasible; document that on-chain claims/transfers are public. |
 | T-22 | Unsafe dependency or copied contract | Pin dependencies, review licenses, scan advisories, minimize code and record provenance. |
 
-## Emergency Operation Decision Needed
+## Approved Emergency Operation Proposal
 
-Before contracts are written, the team must approve a pause matrix:
+The following matrix is proposed for team approval before contracts are written:
 
-| Operation | Recommended behavior while paused |
+| Operation | Submission behavior while operationally paused |
 |---|---|
 | New reserve deposit/mint | Blocked |
 | Normal transfer | Blocked |
 | New campaign/batch | Blocked |
-| Claim | Blocked until incident is understood |
-| Redemption | Prefer available when safe; otherwise require a separately documented emergency redemption path |
+| Claim | Not in submission scope; later implementation defaults to blocked |
+| Redemption | Available so an operational pause cannot strand backed holders |
 | Role rotation | Administrator-only and available for recovery |
-| Unpause | Separate authorized transaction |
+| Pause | Pauser or administrator |
+| Unpause | Administrator-only, separate confirmed transaction |
 
-The team must not accidentally block redemption simply because a general token pause modifier
-was convenient.
+When holder allowlists are added after submission, removal from the allowlist blocks normal
+receipt/transfer but does not block self-service redemption. A separate redemption emergency
+stop may exist only for a defect in the vault/redemption path itself; it must emit a reasoned
+event, be visible publicly, and must not be activated by the ordinary transfer pause.
+
+This deliberately keeps the normal incident switch narrow. The team must not accidentally
+block redemption because a general token pause modifier is convenient.
 
 ## Mainnet Release Gates
 

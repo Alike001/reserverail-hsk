@@ -1,6 +1,6 @@
 # Spec: ReserveRail
 
-Status: **Draft for three-person team approval**  
+Status: **Phase 1 proposal for three-person team approval**
 Date: **2026-08-27**
 
 ## Objective
@@ -17,6 +17,14 @@ Working product statement:
 
 > Launch a branded, USDC-backed stablecoin on HSK Chain, distribute it to users, and let
 > anyone verify or redeem its backing.
+
+Lead use case: an RWA or fintech operator issues a branded settlement token, distributes
+funded units to participants, and gives holders and reviewers a public backing/redemption path.
+
+The official event page sets submission for **2026-08-27 at 14:00 WAT**, with a three-minute
+showcase and two-minute Q&A. The submission MVP is therefore limited to the real
+deposit/mint/transfer/redeem lifecycle, public proof, and essential access controls. See the
+[Phase 1 decision record](../../docs/phase-1-decisions.md).
 
 ## Background And Current Reality
 
@@ -49,9 +57,9 @@ claim, or redeem it.
 
 - Issuer administrator: assigns and rotates privileged roles.
 - Reserve operator: deposits reserve assets and initiates reserve-backed minting.
-- Compliance operator: manages eligibility when restricted-transfer mode is enabled.
+- Compliance operator (post-submission): manages eligibility when restricted-transfer mode is enabled.
 - Pauser: stops risky operations during an incident.
-- Distributor: creates batch payouts and funded claim campaigns.
+- Distributor: sends backed supply; later versions add batch payouts and funded claim campaigns.
 
 ### Reviewer
 
@@ -84,6 +92,8 @@ product without first connecting a wallet.
   can be completed without simulation.
 - NG-008: Inviting meaningful public funds before independent security and legal review.
 - NG-009: Building a generic multi-chain product during the hackathon.
+- NG-010: Shipping Merkle campaigns, holder allowlists, or gas sponsorship in the submission
+  build before the core reserve lifecycle is verified end to end.
 
 ## Requirements
 
@@ -128,7 +138,7 @@ product without first connecting a wallet.
   USDC.e from that stablecoin's vault.
 - FR-031: Successful redemption must burn the stablecoin before or atomically with releasing
   the reserve.
-- FR-032: Restricted-transfer policies must define an explicit holder redemption route; an
+- FR-032 (post-submission): Restricted-transfer policies must define an explicit holder redemption route; an
   allowlist change must not silently destroy a legitimate holder's redemption capability.
 - FR-033: The interface must show why redemption is unavailable or reverted and must never
   show success without a confirmed HSK receipt.
@@ -137,9 +147,9 @@ product without first connecting a wallet.
 
 - FR-040: The system must separate administrator, compliance operator, pauser, and distributor
   capabilities.
-- FR-041: Issuers must be able to choose open-transfer mode or issuer-managed allowlist mode at
-  creation.
-- FR-042: In allowlist mode, eligibility changes must be explicit transactions with actor and
+- FR-041: The submission uses open-transfer mode. A post-submission release may add an
+  issuer-managed allowlist mode without changing the reserve/redemption invariant.
+- FR-042 (post-submission): In allowlist mode, eligibility changes must be explicit transactions with actor and
   target events.
 - FR-043: The pauser must be able to stop value-changing operations during an incident.
 - FR-044: Role grants, revocations, and rotations must be visible on the public product page.
@@ -148,10 +158,11 @@ product without first connecting a wallet.
 
 ### Distribution
 
-- FR-050: A distributor must be able to fund and execute a bounded batch payout.
-- FR-051: A distributor must be able to create a funded claim campaign with a Merkle root,
+- FR-050: The submission MVP must support a real standard ERC-20 transfer as its minimum
+  distribution path. A bounded batch payout is the first enhancement after the core lifecycle.
+- FR-051 (post-submission): A distributor must be able to create a funded claim campaign with a Merkle root,
   token amount, expiry, and cancellation/refund rules.
-- FR-052: Each valid claim may be used once and must be bound to one campaign, one token, one
+- FR-052 (post-submission): Each valid claim may be used once and must be bound to one campaign, one token, one
   chain, and the intended recipient/amount.
 - FR-053: Distribution must transfer existing backed supply; it must never bypass reserve-gated
   minting.
@@ -210,7 +221,7 @@ product without first connecting a wallet.
   mainnet, and every transaction is linked from the product.
 - AC-007: A paused token and an ineligible recipient display truthful failures and never show a
   successful receipt.
-- AC-008: A duplicate or malformed claim cannot move funds; expired/cancelled campaigns follow
+- AC-008 (post-submission): A duplicate or malformed claim cannot move funds; expired/cancelled campaigns follow
   the documented refund behavior.
 - AC-009: A clean reviewer can access the deployed app without secrets and can start the local
   read-only build through the single documented command.
@@ -226,8 +237,8 @@ product without first connecting a wallet.
 - Three-person team with issue-based self-assignment and cross-review.
 - Mainnet deployment is mandatory, but value must remain deliberately small before an audit.
 - The initial reserve inherits USDC.e issuer, bridge, proxy, censorship, and liquidity risks.
-- The official deadline and complete event rules are still unknown; scope must shrink rather
-  than add unsafe shortcuts when the time budget is confirmed.
+- The official submission deadline is 2026-08-27 at 14:00 WAT. Scope must shrink rather than
+  add unsafe shortcuts within the remaining event time.
 - The web experience must remain useful in read-only mode without a wallet or backend secret.
 - Smart-contract changes require stronger review and tests than copy, styling, or documentation
   changes.
@@ -251,17 +262,16 @@ These stories are expanded in
 
 ## Open Questions
 
-- OQ-001: What is the official event URL and build deadline?
-- OQ-002: Which primary issuer story will the pitch lead with: RWA distributions, payroll, or
-  fintech settlement? Recommendation: RWA distributions because it fits HSK positioning.
-- OQ-003: Should open or allowlisted transfers be preselected in the creation wizard?
-  Recommendation: no silent default; require an explicit issuer choice.
-- OQ-004: Will the factory be permissionless for the pilot? Recommendation: yes technically,
-  while clearly separating deployment access from legal issuer status.
+- OQ-001 resolved: the event is the Ethereum Builders Tour in Lagos; submission is
+  2026-08-27 at 14:00 WAT.
+- OQ-002 resolved: lead with RWA/fintech settlement distribution.
+- OQ-003 resolved for submission: use open transfers; issuer-managed allowlists are deferred.
+- OQ-004 resolved: the factory is permissionless while deployment is explicitly not legal
+  issuer authorization.
 - OQ-005: What amount of HSK and USDC.e can the team allocate to mainnet evidence?
 - OQ-006: Does the organizer require HSP or another sponsor integration for this track?
-- OQ-007: What final product name, repository owner, public license, and team GitHub handles
-  should be used?
+- OQ-007 partially resolved: product `ReserveRail`, repository `Alike001/reserverail-hsk`, and
+  three GitHub handles are known. A public software license still needs a team decision.
 
 ## Source References
 
