@@ -128,6 +128,8 @@ curl --fail --silent --show-error \
 - The submission reserve asset is fixed to the exact USDC.e proxy address above.
 - Contracts use six decimals without lossy conversion.
 - Mainnet-fork tests pin block `26,722,885` or explicitly record a newer reviewed block.
+- The pinned [USDC.e fork proof](./hsk-usdce-fork-proof.md) covers approval, allowance,
+  transfer, `transferFrom`, six-decimal units, and insufficient-funds paths.
 - The pilot remains low-value and unaudited.
 - No production UI displays reserve coverage when RPC reads are unavailable or stale.
 
