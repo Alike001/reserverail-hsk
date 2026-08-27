@@ -5,20 +5,14 @@ interface IIssuerStablecoin {
     event Approval(address indexed owner, address indexed spender, uint256 value);
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Initialized(
-        string name, string symbol, address indexed administrator, address indexed vault, address indexed pauser
+        string name, string symbol, address indexed factory, address indexed administrator, address indexed vault
     );
     event TransferPolicyUpdated(address indexed previousPolicy, address indexed newPolicy);
     event Paused(address indexed account);
     event Unpaused(address indexed account);
     event RoleRotated(bytes32 indexed role, address indexed previousAccount, address indexed newAccount);
 
-    function initialize(
-        string calldata name_,
-        string calldata symbol_,
-        address administrator,
-        address vault,
-        address pauser
-    ) external;
+    function initialize(string calldata name_, string calldata symbol_, address administrator, address vault) external;
 
     function name() external view returns (string memory);
     function symbol() external view returns (string memory);
@@ -32,14 +26,13 @@ interface IIssuerStablecoin {
 
     function mint(address to, uint256 amount) external;
     function burn(address from, uint256 amount) external;
-    function pause() external;
-    function unpause() external;
+    function setOperationalPause(bool paused_) external;
     function setTransferPolicy(address policy) external;
     function rotateRole(bytes32 role, address newAccount) external;
 
+    function factory() external view returns (address);
     function administrator() external view returns (address);
     function vault() external view returns (address);
-    function pauser() external view returns (address);
     function transferPolicy() external view returns (address);
     function paused() external view returns (bool);
 }

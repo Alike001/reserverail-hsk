@@ -12,11 +12,14 @@ interface IVersionRegistry {
         uint64 indexed version, address indexed tokenImplementation, address indexed vaultImplementation
     );
     event VersionStatusUpdated(uint64 indexed version, bool active);
+    event RegistryAdministratorRotated(address indexed previousAdministrator, address indexed newAdministrator);
 
     function registerVersion(uint64 version, address tokenImplementation, address vaultImplementation) external;
 
     function setVersionActive(uint64 version, bool active) external;
+    function rotateAdministrator(address newAdministrator) external;
     function getVersion(uint64 version) external view returns (Version memory);
+    function administrator() external view returns (address);
     function latestVersion() external view returns (uint64);
     function isVersionActive(uint64 version) external view returns (bool);
 }
