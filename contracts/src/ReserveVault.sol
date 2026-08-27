@@ -30,6 +30,7 @@ contract ReserveVault {
     error InvalidReserveAsset();
     error InvalidToken();
     error InvalidAmountReceived();
+    error InvalidAmountPaid();
     error InsufficientReserve();
     error TransferFailed();
     error Reentrancy();
@@ -79,6 +80,7 @@ contract ReserveVault {
         if (reserveAsset_.code.length == 0) revert InvalidReserveAsset();
         if (issuerToken_.code.length == 0) revert InvalidToken();
         if (IERC20Reserve(reserveAsset_).decimals() != DECIMALS) revert InvalidReserveAsset();
+        _validateIssuerPair(issuerToken_, administrator_);
 
         factory = msg.sender;
         reserveAsset = reserveAsset_;
@@ -101,7 +103,9 @@ contract ReserveVault {
         if (!IERC20Reserve(reserveAsset).transferFrom(msg.sender, address(this), reserveAmount)) {
             revert TransferFailed();
         }
-        uint256 received = IERC20Reserve(reserveAsset).balanceOf(address(this)) - beforeBalance;
+        uint256 afterBalance = IERC20Reserve(reserveAsset).balanceOf(address(this));
+        if (afterBalance < beforeBalance) revert InvalidAmountReceived();
+        uint256 received = afterBalance - beforeBalance;
         if (received == 0 || received != reserveAmount) revert InvalidAmountReceived();
 
         IssuerStablecoin(issuerToken).mint(recipient, received);
@@ -111,44 +115,24 @@ contract ReserveVault {
     function redeem(uint256 tokenAmount, address recipient) external nonReentrant {
         if (tokenAmount == 0) revert ZeroAmount();
         if (recipient == address(0)) revert ZeroAddress();
-        if (IERC20Reserve(reserveAsset).balanceOf(address(this)) < tokenAmount) revert InsufficientReserve();
+        uint256 beforeVaultBalance = IERC20Reserve(reserveAsset).balanceOf(address(this));
+        if (beforeVaultBalance < tokenAmount) revert InsufficientReserve();
+        uint256 beforeRecipientBalance = IERC20Reserve(reserveAsset).balanceOf(recipient);
 
         IssuerStablecoin(issuerToken).burn(msg.sender, tokenAmount);
         if (!IERC20Reserve(reserveAsset).transfer(recipient, tokenAmount)) revert TransferFailed();
-        emit Redeemed(msg.sender, issuerToken, recipient, tokenAmount, tokenAmount);
-    }
 
-    function pause() external {
-        if (msg.sender != pauser && msg.sender != administrator) revert Unauthorized();
-        operationallyPaused = true;
-        emit Paused(msg.sender);
-    }
-
-    function unpause() external {
-        if (msg.sender != administrator) revert Unauthorized();
-        operationallyPaused = false;
-        emit Unpaused(msg.sender);
-    }
-
-    function rotateRole(bytes32 role, address newAccount) external {
-        if (msg.sender != administrator) revert Unauthorized();
-        if (newAccount == address(0)) revert ZeroAddress();
-
-        if (role == keccak256("ADMINISTRATOR")) {
-            address previous = administrator;
-            administrator = newAccount;
-            emit RoleRotated(role, previous, newAccount);
-        } else if (role == keccak256("RESERVE_OPERATOR")) {
-            address previous = reserveOperator;
-            reserveOperator = newAccount;
-            emit RoleRotated(role, previous, newAccount);
-        } else if (role == keccak256("PAUSER")) {
-            address previous = pauser;
-            pauser = newAccount;
-            emit RoleRotated(role, previous, newAccount);
-        } else {
-            revert Unauthorized();
+        uint256 afterVaultBalance = IERC20Reserve(reserveAsset).balanceOf(address(this));
+        uint256 afterRecipientBalance = IERC20Reserve(reserveAsset).balanceOf(recipient);
+        if (afterVaultBalance > beforeVaultBalance || afterRecipientBalance < beforeRecipientBalance) {
+            revert InvalidAmountPaid();
         }
+        if (
+            beforeVaultBalance - afterVaultBalance != tokenAmount
+                || afterRecipientBalance - beforeRecipientBalance != tokenAmount
+        ) revert InvalidAmountPaid();
+
+        emit Redeemed(msg.sender, issuerToken, recipient, tokenAmount, tokenAmount);
     }
 
     function reserveBalance() external view returns (uint256) {
@@ -157,6 +141,34 @@ contract ReserveVault {
 
     function redeemableSupply() external view returns (uint256) {
         return IssuerStablecoin(issuerToken).totalSupply();
+    }
+
+    function _validateIssuerPair(address issuerToken_, address administrator_) private view {
+        IssuerStablecoin token = IssuerStablecoin(issuerToken_);
+
+        try token.factory() returns (address tokenFactory) {
+            if (tokenFactory != msg.sender) revert InvalidToken();
+        } catch {
+            revert InvalidToken();
+        }
+
+        try token.vault() returns (address pairedVault) {
+            if (pairedVault != address(this)) revert InvalidToken();
+        } catch {
+            revert InvalidToken();
+        }
+
+        try token.administrator() returns (address tokenAdministrator) {
+            if (tokenAdministrator != administrator_) revert InvalidToken();
+        } catch {
+            revert InvalidToken();
+        }
+
+        try token.decimals() returns (uint8 tokenDecimals) {
+            if (tokenDecimals != DECIMALS) revert InvalidToken();
+        } catch {
+            revert InvalidToken();
+        }
     }
 
     modifier nonReentrant() {
