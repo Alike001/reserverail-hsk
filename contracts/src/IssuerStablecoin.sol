@@ -24,19 +24,11 @@ contract IssuerStablecoin {
 
     event Approval(address indexed owner, address indexed spender, uint256 value);
     event Transfer(address indexed from, address indexed to, uint256 value);
-    event Initialized(
-        string name,
-        string symbol,
-        address indexed administrator,
-        address indexed vault
-    );
+    event Initialized(string name, string symbol, address indexed administrator, address indexed vault);
 
-    function initialize(
-        string calldata name_,
-        string calldata symbol_,
-        address administrator_,
-        address vault_
-    ) external {
+    function initialize(string calldata name_, string calldata symbol_, address administrator_, address vault_)
+        external
+    {
         if (initialized) revert AlreadyInitialized();
         if (administrator_ == address(0) || vault_ == address(0)) revert ZeroAddress();
         if (bytes(name_).length == 0 || bytes(symbol_).length == 0) revert InvalidMetadata();

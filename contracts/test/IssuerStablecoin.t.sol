@@ -20,9 +20,8 @@ contract IssuerStablecoinTest {
         require(token.administrator() == ADMINISTRATOR, "wrong administrator");
         require(token.vault() == VAULT, "wrong vault");
 
-        (bool succeeded,) = address(token).call(
-            abi.encodeCall(token.initialize, ("Other", "OTHER", ADMINISTRATOR, VAULT))
-        );
+        (bool succeeded,) =
+            address(token).call(abi.encodeCall(token.initialize, ("Other", "OTHER", ADMINISTRATOR, VAULT)));
         require(!succeeded, "reinitialization succeeded");
     }
 
@@ -80,7 +79,6 @@ contract IssuerStablecoinTest {
         require(second.balanceOf(HOLDER) == 0, "second balance changed");
     }
 }
-
 
 contract IssuerStablecoinUnauthorizedCaller {
     function tryMint(IssuerStablecoin token, address recipient, uint256 amount) external returns (bool) {
