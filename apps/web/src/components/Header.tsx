@@ -1,6 +1,11 @@
+import { lazy, Suspense } from "react";
 import { deploymentManifest, hskMainnet } from "../config/hsk";
 import type { RouteState } from "../types/pilot";
 import { UnauditedBadge } from "./UnauditedBadge";
+
+const WalletStatus = lazy(() =>
+  import("./WalletStatus").then((module) => ({ default: module.WalletStatus })),
+);
 
 interface HeaderProps {
   currentRoute: RouteState;
@@ -29,6 +34,13 @@ export function Header({ currentRoute, onNavigate }: HeaderProps) {
 
         <div className="header-meta">
           <UnauditedBadge />
+          <Suspense
+            fallback={
+              <span className="wallet-unavailable">Wallet loading…</span>
+            }
+          >
+            <WalletStatus />
+          </Suspense>
         </div>
 
         <nav aria-label="Main Navigation" className="site-nav">

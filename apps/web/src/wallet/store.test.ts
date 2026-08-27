@@ -10,6 +10,7 @@ describe("wallet store", () => {
     const store = createWalletStore();
     expect(store.getSnapshot()).toEqual({
       isHskMainnet: false,
+      isStale: false,
       status: "unavailable",
     });
     expect(store.getClient()).toBeUndefined();
@@ -24,6 +25,7 @@ describe("wallet store", () => {
       account: ACCOUNT,
       chainId: 177,
       isHskMainnet: true,
+      isStale: false,
       status: "connected",
     });
 
@@ -69,6 +71,14 @@ describe("wallet store", () => {
       account: SECOND_ACCOUNT,
       chainId: 133,
       isHskMainnet: false,
+      isStale: false,
+    });
+
+    provider.emit("disconnect", { code: 4900 });
+    expect(store.getSnapshot()).toMatchObject({
+      error: { kind: "disconnected" },
+      isStale: true,
+      status: "disconnected",
     });
 
     unsubscribeFirst();

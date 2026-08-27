@@ -1,43 +1,27 @@
-import {
-  createWalletClient,
-  custom,
-  type Address,
-  type WalletClient,
-} from "viem";
+import { createWalletClient, custom, type WalletClient } from "viem";
 import { hskMainnet } from "../config/hsk";
 import { hskChain, switchWalletClientToHsk } from "./chain";
-import {
-  normalizeWalletError,
-  WalletOperationError,
-  type WalletErrorKind,
-} from "./errors";
+import { normalizeWalletError, WalletOperationError } from "./errors";
 import {
   getInjectedProvider,
   parseProviderAccount,
   parseProviderChainId,
 } from "./provider";
+import type { WalletSnapshot, WalletStatus } from "./types";
 
-export type WalletStatus =
-  "connected" | "connecting" | "disconnected" | "unavailable";
-
-export type WalletSnapshot = Readonly<{
-  account?: Address;
-  chainId?: number;
-  error?: Readonly<{ kind: WalletErrorKind; message: string }>;
-  isHskMainnet: boolean;
-  status: WalletStatus;
-}>;
+export type { WalletSnapshot, WalletStatus } from "./types";
 
 export type WalletStore = ReturnType<typeof createWalletStore>;
 
 const serverSnapshot: WalletSnapshot = {
   isHskMainnet: false,
+  isStale: false,
   status: "unavailable",
 };
 
 export function createWalletStore(provider = getInjectedProvider()) {
   let snapshot: WalletSnapshot = provider
-    ? { isHskMainnet: false, status: "disconnected" }
+    ? { isHskMainnet: false, isStale: false, status: "disconnected" }
     : serverSnapshot;
   const listeners = new Set<() => void>();
   const client = provider
@@ -49,13 +33,18 @@ export function createWalletStore(provider = getInjectedProvider()) {
     listeners.forEach((listener) => listener());
   };
 
-  const publishError = (error: unknown, status: WalletStatus) => {
+  const publishError = (
+    error: unknown,
+    status: WalletStatus,
+    isStale = false,
+  ) => {
     const normalized = normalizeWalletError(error);
     publish({
       ...snapshot,
       account: status === "connected" ? snapshot.account : undefined,
       error: { kind: normalized.kind, message: normalized.message },
       isHskMainnet: snapshot.chainId === hskMainnet.id,
+      isStale,
       status,
     });
     return normalized;
@@ -67,6 +56,7 @@ export function createWalletStore(provider = getInjectedProvider()) {
       account,
       chainId: snapshot.chainId,
       isHskMainnet: snapshot.chainId === hskMainnet.id,
+      isStale: false,
       status: account ? "connected" : "disconnected",
     });
   };
@@ -79,6 +69,7 @@ export function createWalletStore(provider = getInjectedProvider()) {
         chainId,
         error: undefined,
         isHskMainnet: chainId === hskMainnet.id,
+        isStale: false,
       });
     } catch (error) {
       publishError(error, snapshot.status);
@@ -86,7 +77,7 @@ export function createWalletStore(provider = getInjectedProvider()) {
   };
 
   const onDisconnect = (...parameters: unknown[]) => {
-    publishError(parameters[0], "disconnected");
+    publishError(parameters[0], "disconnected", true);
   };
 
   provider?.on?.("accountsChanged", onAccountsChanged);
@@ -115,11 +106,12 @@ export function createWalletStore(provider = getInjectedProvider()) {
           account,
           chainId,
           isHskMainnet: chainId === hskMainnet.id,
+          isStale: false,
           status: account ? "connected" : "disconnected",
         });
         return snapshot;
       } catch (error) {
-        throw publishError(error, "disconnected");
+        throw publishError(error, "disconnected", true);
       }
     },
     async connect() {
@@ -142,6 +134,7 @@ export function createWalletStore(provider = getInjectedProvider()) {
           account,
           chainId,
           isHskMainnet: chainId === hskMainnet.id,
+          isStale: false,
           status: "connected",
         });
         return snapshot;
@@ -153,6 +146,7 @@ export function createWalletStore(provider = getInjectedProvider()) {
       publish({
         chainId: snapshot.chainId,
         isHskMainnet: snapshot.chainId === hskMainnet.id,
+        isStale: false,
         status: provider ? "disconnected" : "unavailable",
       });
     },
@@ -170,6 +164,7 @@ export function createWalletStore(provider = getInjectedProvider()) {
         chainId: hskMainnet.id,
         error: undefined,
         isHskMainnet: true,
+        isStale: false,
       });
       return snapshot;
     },
