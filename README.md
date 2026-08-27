@@ -88,6 +88,7 @@ Pull requests must pass web lint/typecheck/test/build, Foundry formatting/build/
 - [Threat model](./docs/threat-model.md)
 - [Interaction wireframe](./docs/interaction-wireframe.md)
 - [Product specification](./.thoughts/specs/2026-08-27-hsk-stablecoin-issuer-studio.md)
+- [Demo Day showcase and rehearsal script](./docs/demo-day-showcase.md)
 - [Research context](./context/README.md)
 
 Verified deployment addresses, transaction receipts, hosted product URL, and demo video will be added only after those artifacts exist and have been reviewed.
