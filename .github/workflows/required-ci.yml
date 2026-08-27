@@ -80,8 +80,32 @@ jobs:
       - name: Build contracts
         run: forge build --root contracts
 
-      - name: Test contracts
-        run: forge test --root contracts
+      - name: Test contracts with deterministic fuzzing
+        run: >-
+          forge test --root contracts
+          --no-match-contract ReserveCoverageInvariantTest
+          --fuzz-seed 0x2700000000000000000000000000000000000000000000000000000000000027
+
+      - name: Run stateful reserve invariants
+        run: >-
+          forge test --root contracts
+          --match-contract ReserveCoverageInvariantTest
+          --fuzz-seed 0x2700000000000000000000000000000000000000000000000000000000000027
+          -vv
+
+      - name: Report contract coverage
+        run: >-
+          forge coverage --root contracts
+          --no-match-contract ReserveCoverageInvariantTest
+          --fuzz-seed 0x2700000000000000000000000000000000000000000000000000000000000027
+          --report summary
+
+      - name: Check critical-path gas snapshot
+        run: >-
+          forge snapshot --root contracts
+          --match-contract CriticalPathGasTest
+          --fuzz-seed 0x2700000000000000000000000000000000000000000000000000000000000027
+          --check
 
   docs-links-and-secrets:
     name: docs-links-and-secrets
