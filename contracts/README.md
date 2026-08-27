@@ -27,6 +27,14 @@ backing checks live in [`script/DeployHskTestnet.s.sol`](./script/DeployHskTestn
 the reviewed [HSK testnet deployment runbook](../docs/hsk-testnet-deployment.md); simulation is
 safe by default, while only the repository owner may add `--broadcast` and sign in MetaMask.
 
+## HSK mainnet deployment preparation
+
+The chain-177-only script in [`script/DeployHskMainnet.s.sol`](./script/DeployHskMainnet.s.sol)
+deploys the reviewed implementations, registry, factory, and an explicitly unfunded pilot pair.
+It cannot deposit or mint reserve funds. Follow the
+[HSK mainnet deployment runbook](../docs/hsk-mainnet-deployment.md); simulation is the only
+approved action until every recorded go/no-go dependency is satisfied.
+
 ## HSK mainnet USDC.e fork proof
 
 The fork suite is isolated from default CI because it depends on a public RPC. Run it against
