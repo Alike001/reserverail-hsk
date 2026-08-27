@@ -6,12 +6,14 @@ import { UnauditedBadge } from "./UnauditedBadge";
 
 interface PilotRouteProps {
   onNavigate: (route: RouteState) => void;
+  onRetryProof?: () => void;
   proofData?: PilotProofData;
   manifestOverride?: typeof deploymentManifest;
 }
 
 export function PilotRoute({
   onNavigate,
+  onRetryProof,
   proofData,
   manifestOverride,
 }: PilotRouteProps) {
@@ -46,7 +48,11 @@ export function PilotRoute({
       {manifest.status === "undeployed" ? (
         <PilotUndeployedState manifest={manifest} />
       ) : (
-        <PilotProofState manifest={manifest} proofData={proofData} />
+        <PilotProofState
+          manifest={manifest}
+          proofData={proofData}
+          onRetry={onRetryProof}
+        />
       )}
     </div>
   );
