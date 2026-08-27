@@ -11,6 +11,12 @@ const AccessAndEmergencyControls = lazy(() =>
   })),
 );
 
+const IssuerCreateView = lazy(() =>
+  import("./components/IssuerCreateView").then((m) => ({
+    default: m.IssuerCreateView,
+  })),
+);
+
 function App() {
   const { route, navigate } = useRoute();
 
@@ -23,6 +29,17 @@ function App() {
           <LandingView onNavigate={navigate} />
         ) : route === "pilot" ? (
           <PilotRoute onNavigate={navigate} />
+        ) : route === "create" ? (
+          <Suspense
+            fallback={
+              <div className="pilot-state-card">
+                <h3>Loading Factory Studio…</h3>
+                <p>Connecting to stablecoin factory on HSK Mainnet…</p>
+              </div>
+            }
+          >
+            <IssuerCreateView onSuccessNavigate={() => navigate("controls")} />
+          </Suspense>
         ) : (
           <Suspense
             fallback={
