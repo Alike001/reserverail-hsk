@@ -15,9 +15,11 @@ import {
   parseReserveUnits,
   reconcileIssuerMint,
   validateIssuerFormData,
+  verifyReserveAllowance,
   type DiscoveredIssuerPair,
   type MintReconciliationResult,
 } from "../wallet/issuer";
+import { normalizeWalletError } from "../wallet/errors";
 import { walletStore, type WalletStore } from "../wallet/store";
 import type { TransactionState } from "../wallet/transaction";
 import { useWallet } from "../wallet/use-wallet";
@@ -26,7 +28,9 @@ interface IssuerCreateViewProps {
   store?: WalletStore;
   factoryAddressOverride?: Address;
   usdcAddressOverride?: Address;
-  onSuccessNavigate?: (vaultAddress: Address) => void;
+  onSuccessNavigate?: (
+    pair: Pick<DiscoveredIssuerPair, "token" | "vault">,
+  ) => void;
 }
 
 type WizardStage = "form" | "pipeline" | "success";
@@ -75,6 +79,10 @@ export function IssuerCreateView({
   const [step2ConfirmedHash, setStep2ConfirmedHash] = useState<string | null>(
     null,
   );
+  const [isVerifyingApproval, setIsVerifyingApproval] = useState(false);
+  const [approvalVerificationError, setApprovalVerificationError] = useState<
+    string | null
+  >(null);
 
   // Step 3 State: Deposit & Mint
   const [step3TxState, setStep3TxState] = useState<TransactionState | null>(
@@ -91,6 +99,18 @@ export function IssuerCreateView({
   const [reconciliationError, setReconciliationError] = useState<string | null>(
     null,
   );
+
+  const step1SubmittedHash = submittedTransactionHash(step1TxState);
+  const step1ReceiptHash = successfulReceiptHash(step1TxState);
+  const step2SubmittedHash =
+    step2ConfirmedHash ?? submittedTransactionHash(step2TxState);
+  const step2ReceiptHash =
+    step2ConfirmedHash ?? successfulReceiptHash(step2TxState);
+  const step3SubmittedHash =
+    step3ConfirmedHash ?? submittedTransactionHash(step3TxState);
+  const step3ReceiptHash =
+    step3ConfirmedHash ?? successfulReceiptHash(step3TxState);
+  const isReconciled = reconciliation?.isReconciled === true;
 
   // Sync wallet account to empty fields if updated
   const fillConnectedAccount = () => {
@@ -143,6 +163,7 @@ export function IssuerCreateView({
           reserveOperator: (reserveOperator || defaultAccount) as Address,
           pauser: (pauser || defaultAccount) as Address,
         },
+        reserveAssetAddress: usdcAddress,
         walletClient: client,
         account: wallet.account,
         onState: setStep1TxState,
@@ -165,9 +186,10 @@ export function IssuerCreateView({
     if (!parsedAmount) return;
 
     setActiveStep(2);
+    setApprovalVerificationError(null);
     try {
       const { receipt } = await executeApproveReserve({
-        reserveAssetAddress: usdcAddress,
+        reserveAssetAddress: discoveredPair.reserveAsset,
         spender: discoveredPair.vault,
         amount: parsedAmount,
         walletClient: client,
@@ -179,6 +201,67 @@ export function IssuerCreateView({
       setActiveStep(3);
     } catch {
       // Handled in transaction state
+    }
+  };
+
+  const handleVerifyApproval = async () => {
+    if (!discoveredPair || !wallet.account || !step2ReceiptHash) return;
+    const parsedAmount = parseReserveUnits(reserveAmountInput).amount;
+    if (!parsedAmount) return;
+
+    setIsVerifyingApproval(true);
+    setApprovalVerificationError(null);
+    try {
+      await verifyReserveAllowance({
+        reserveAssetAddress: discoveredPair.reserveAsset,
+        owner: wallet.account,
+        spender: discoveredPair.vault,
+        amount: parsedAmount,
+      });
+      setStep2ConfirmedHash(step2ReceiptHash);
+      setActiveStep(3);
+    } catch (error) {
+      setApprovalVerificationError(normalizeWalletError(error).message);
+    } finally {
+      setIsVerifyingApproval(false);
+    }
+  };
+
+  const handleReconcileStep3 = async (confirmedHash?: string) => {
+    if (!discoveredPair) return;
+
+    const parsedAmount = parseReserveUnits(reserveAmountInput).amount;
+    if (!parsedAmount) return;
+
+    const targetRecipient = (recipient || defaultAccount) as Address;
+    setIsReconciling(true);
+    setReconciliationError(null);
+
+    try {
+      const reconResult = await reconcileIssuerMint({
+        vaultAddress: discoveredPair.vault,
+        tokenAddress: discoveredPair.token,
+        recipient: targetRecipient,
+        expectedMintAmount: parsedAmount,
+      });
+
+      setReconciliation(reconResult);
+      if (!reconResult.isReconciled) {
+        setReconciliationError(
+          reconResult.reconciliationError ??
+            "On-chain reconciliation failed between reserve, supply, and recipient balance.",
+        );
+        return;
+      }
+
+      const receiptHash = confirmedHash ?? step3ReceiptHash;
+      if (receiptHash) setStep3ConfirmedHash(receiptHash);
+      setStage("success");
+    } catch (error) {
+      setReconciliation(null);
+      setReconciliationError(normalizeWalletError(error).message);
+    } finally {
+      setIsReconciling(false);
     }
   };
 
@@ -205,30 +288,8 @@ export function IssuerCreateView({
       });
 
       setStep3ConfirmedHash(receipt.transactionHash);
-
-      // Perform Authoritative Post-Read Reconciliation
-      setIsReconciling(true);
-      setReconciliationError(null);
-      const reconResult = await reconcileIssuerMint({
-        vaultAddress: discoveredPair.vault,
-        tokenAddress: discoveredPair.token,
-        recipient: targetRecipient,
-        expectedMintAmount: parsedAmount,
-      });
-
-      setReconciliation(reconResult);
-      setIsReconciling(false);
-
-      if (reconResult.isReconciled) {
-        setStage("success");
-      } else {
-        setReconciliationError(
-          reconResult.reconciliationError ??
-            "On-chain reconciliation failed between reserve and token supply.",
-        );
-      }
+      await handleReconcileStep3(receipt.transactionHash);
     } catch {
-      setIsReconciling(false);
       // Handled in transaction state
     }
   };
@@ -479,7 +540,7 @@ export function IssuerCreateView({
                 className={`step-status-pill ${
                   step1TxState?.phase === "confirmed" || discoveredPair
                     ? "pill-completed"
-                    : step1TxState?.phase === "pending"
+                    : step1SubmittedHash || isTransactionBusy(step1TxState)
                       ? "pill-active"
                       : step1TxState?.phase === "failed"
                         ? "pill-failed"
@@ -488,11 +549,15 @@ export function IssuerCreateView({
               >
                 {discoveredPair
                   ? "CONFIRMED"
-                  : step1TxState?.phase === "pending"
-                    ? "MINING…"
-                    : step1TxState?.phase === "failed"
-                      ? "FAILED"
-                      : "READY"}
+                  : step1ReceiptHash
+                    ? "MINED · EVIDENCE INVALID"
+                    : isTransactionBusy(step1TxState)
+                      ? transactionProgressLabel(step1TxState, "DEPLOYING")
+                      : step1SubmittedHash
+                        ? "SUBMITTED · RECEIPT UNVERIFIED"
+                        : step1TxState?.phase === "failed"
+                          ? "FAILED"
+                          : "READY"}
               </span>
             </div>
 
@@ -524,16 +589,32 @@ export function IssuerCreateView({
                   </a>
                 </div>
               </div>
+            ) : step1SubmittedHash ? (
+              <div className="pipeline-step-meta">
+                <span className="field-error">
+                  {step1TxState?.phase === "failed"
+                    ? step1TxState.error.message
+                    : "Factory transaction was submitted but its receipt is not verified."}{" "}
+                  Do not resubmit the factory transaction.
+                </span>
+                <a
+                  href={toExplorerTransaction(step1SubmittedHash)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Inspect submitted transaction ↗
+                </a>
+              </div>
             ) : (
               <div className="emergency-actions">
                 <button
                   type="button"
                   className="btn btn-primary"
-                  disabled={step1TxState?.phase === "pending"}
+                  disabled={isTransactionBusy(step1TxState)}
                   onClick={handleRunStep1}
                 >
-                  {step1TxState?.phase === "pending"
-                    ? "Confirming in Wallet…"
+                  {isTransactionBusy(step1TxState)
+                    ? transactionProgressLabel(step1TxState, "Deploying Pair")
                     : step1TxState?.phase === "failed"
                       ? "Retry Step 1"
                       : "Sign Step 1 Transaction"}
@@ -566,7 +647,9 @@ export function IssuerCreateView({
                 className={`step-status-pill ${
                   step2ConfirmedHash
                     ? "pill-completed"
-                    : step2TxState?.phase === "pending"
+                    : step2SubmittedHash ||
+                        isTransactionBusy(step2TxState) ||
+                        isVerifyingApproval
                       ? "pill-active"
                       : step2TxState?.phase === "failed"
                         ? "pill-failed"
@@ -575,11 +658,17 @@ export function IssuerCreateView({
               >
                 {step2ConfirmedHash
                   ? "APPROVED"
-                  : step2TxState?.phase === "pending"
-                    ? "MINING…"
-                    : step2TxState?.phase === "failed"
-                      ? "FAILED"
-                      : "WAITING"}
+                  : isVerifyingApproval
+                    ? "VERIFYING ALLOWANCE…"
+                    : step2ReceiptHash
+                      ? "APPROVAL MINED · VERIFYING"
+                      : isTransactionBusy(step2TxState)
+                        ? transactionProgressLabel(step2TxState, "APPROVING")
+                        : step2SubmittedHash
+                          ? "APPROVAL SUBMITTED"
+                          : step2TxState?.phase === "failed"
+                            ? "FAILED"
+                            : "WAITING"}
               </span>
             </div>
 
@@ -600,16 +689,62 @@ export function IssuerCreateView({
                   {step2ConfirmedHash} ↗
                 </a>
               </div>
+            ) : discoveredPair && step2ReceiptHash ? (
+              <div className="emergency-actions">
+                <a
+                  href={toExplorerTransaction(step2ReceiptHash)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Approval receipt ↗
+                </a>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={isVerifyingApproval}
+                  onClick={handleVerifyApproval}
+                >
+                  {isVerifyingApproval
+                    ? "Verifying Allowance…"
+                    : "Retry Allowance Verification"}
+                </button>
+                {(approvalVerificationError ||
+                  (step2TxState?.phase === "failed"
+                    ? step2TxState.error.message
+                    : null)) && (
+                  <span className="field-error">
+                    {approvalVerificationError ??
+                      (step2TxState?.phase === "failed"
+                        ? step2TxState.error.message
+                        : null)}
+                  </span>
+                )}
+              </div>
+            ) : discoveredPair && step2SubmittedHash ? (
+              <div className="pipeline-step-meta">
+                <span className="field-error">
+                  Approval was submitted but no successful receipt is verified.
+                  Do not submit another approval until its explorer status is
+                  known.
+                </span>
+                <a
+                  href={toExplorerTransaction(step2SubmittedHash)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Inspect submitted approval ↗
+                </a>
+              </div>
             ) : discoveredPair ? (
               <div className="emergency-actions">
                 <button
                   type="button"
                   className="btn btn-primary"
-                  disabled={step2TxState?.phase === "pending"}
+                  disabled={isTransactionBusy(step2TxState)}
                   onClick={handleRunStep2}
                 >
-                  {step2TxState?.phase === "pending"
-                    ? "Approving USDC.e…"
+                  {isTransactionBusy(step2TxState)
+                    ? transactionProgressLabel(step2TxState, "Approving USDC.e")
                     : step2TxState?.phase === "failed"
                       ? "Retry Step 2"
                       : "Sign Step 2 Approval"}
@@ -626,11 +761,7 @@ export function IssuerCreateView({
           {/* Step 3 Card */}
           <div
             className={`pipeline-step-card ${
-              activeStep === 3
-                ? "active"
-                : step3ConfirmedHash
-                  ? "completed"
-                  : ""
+              activeStep === 3 ? "active" : isReconciled ? "completed" : ""
             }`}
           >
             <div className="pipeline-step-header">
@@ -640,24 +771,30 @@ export function IssuerCreateView({
               </div>
               <span
                 className={`step-status-pill ${
-                  step3ConfirmedHash
+                  isReconciled
                     ? "pill-completed"
-                    : step3TxState?.phase === "pending" || isReconciling
+                    : step3SubmittedHash ||
+                        isTransactionBusy(step3TxState) ||
+                        isReconciling
                       ? "pill-active"
                       : step3TxState?.phase === "failed"
                         ? "pill-failed"
                         : "pill-waiting"
                 }`}
               >
-                {step3ConfirmedHash
+                {isReconciled
                   ? "MINTED & RECONCILED"
                   : isReconciling
                     ? "RECONCILING POST-READS…"
-                    : step3TxState?.phase === "pending"
-                      ? "MINING…"
-                      : step3TxState?.phase === "failed"
-                        ? "FAILED"
-                        : "WAITING"}
+                    : step3ReceiptHash
+                      ? "MINTED · VERIFICATION NEEDED"
+                      : isTransactionBusy(step3TxState)
+                        ? transactionProgressLabel(step3TxState, "MINTING")
+                        : step3SubmittedHash
+                          ? "MINT SUBMITTED · RECEIPT UNVERIFIED"
+                          : step3TxState?.phase === "failed"
+                            ? "FAILED"
+                            : "WAITING"}
               </span>
             </div>
 
@@ -666,16 +803,19 @@ export function IssuerCreateView({
               1:1 minting of {reserveAmountInput} {symbol} to recipient.
             </p>
 
-            {step2ConfirmedHash && !step3ConfirmedHash && (
+            {step2ConfirmedHash && !step3SubmittedHash && (
               <div className="emergency-actions">
                 <button
                   type="button"
                   className="btn btn-primary"
-                  disabled={step3TxState?.phase === "pending" || isReconciling}
+                  disabled={isTransactionBusy(step3TxState) || isReconciling}
                   onClick={handleRunStep3}
                 >
-                  {step3TxState?.phase === "pending"
-                    ? "Depositing & Minting…"
+                  {isTransactionBusy(step3TxState)
+                    ? transactionProgressLabel(
+                        step3TxState,
+                        "Depositing & Minting",
+                      )
                     : isReconciling
                       ? "Reconciling Balances…"
                       : step3TxState?.phase === "failed"
@@ -687,9 +827,55 @@ export function IssuerCreateView({
                     {step3TxState.error.message}
                   </span>
                 )}
-                {reconciliationError && (
-                  <span className="field-error">{reconciliationError}</span>
+              </div>
+            )}
+
+            {step2ConfirmedHash && step3ReceiptHash && !isReconciled && (
+              <div className="emergency-actions">
+                <a
+                  href={toExplorerTransaction(step3ReceiptHash)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Confirmed mint transaction ↗
+                </a>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={isReconciling}
+                  onClick={() => handleReconcileStep3(step3ReceiptHash)}
+                >
+                  {isReconciling
+                    ? "Reconciling Balances…"
+                    : "Retry On-Chain Verification"}
+                </button>
+                {(reconciliationError ||
+                  (step3TxState?.phase === "failed"
+                    ? step3TxState.error.message
+                    : null)) && (
+                  <span className="field-error">
+                    {reconciliationError ??
+                      (step3TxState?.phase === "failed"
+                        ? step3TxState.error.message
+                        : null)}
+                  </span>
                 )}
+              </div>
+            )}
+
+            {step2ConfirmedHash && step3SubmittedHash && !step3ReceiptHash && (
+              <div className="pipeline-step-meta">
+                <span className="field-error">
+                  The mint transaction was submitted but no successful receipt
+                  is verified. Do not submit another deposit and mint.
+                </span>
+                <a
+                  href={toExplorerTransaction(step3SubmittedHash)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Inspect submitted mint ↗
+                </a>
               </div>
             )}
           </div>
@@ -707,7 +893,8 @@ export function IssuerCreateView({
 
           <p className="pilot-subtitle">
             Authoritative on-chain post-reads confirmed that vault USDC.e
-            reserves exactly equal total issued token supply.
+            reserves cover total issued token supply, total supply matches the
+            requested mint, and the recipient balance matches the issued amount.
           </p>
 
           <div className="reconciliation-grid">
@@ -770,7 +957,7 @@ export function IssuerCreateView({
               <button
                 type="button"
                 className="btn btn-primary"
-                onClick={() => onSuccessNavigate(discoveredPair.vault)}
+                onClick={() => onSuccessNavigate(discoveredPair)}
               >
                 Manage Vault Controls
               </button>
@@ -780,12 +967,18 @@ export function IssuerCreateView({
               className="btn btn-secondary"
               onClick={() => {
                 setStage("form");
+                setActiveStep(1);
                 setName("");
                 setSymbol("");
                 setDiscoveredPair(null);
+                setStep1TxState(null);
+                setStep2TxState(null);
                 setStep2ConfirmedHash(null);
+                setApprovalVerificationError(null);
+                setStep3TxState(null);
                 setStep3ConfirmedHash(null);
                 setReconciliation(null);
+                setReconciliationError(null);
               }}
             >
               Issue Another Token
@@ -893,4 +1086,40 @@ export function IssuerCreateView({
       )}
     </div>
   );
+}
+
+function isTransactionBusy(state: TransactionState | null): boolean {
+  return (
+    state?.phase === "awaiting-signature" ||
+    state?.phase === "pending" ||
+    state?.phase === "verifying"
+  );
+}
+
+function transactionProgressLabel(
+  state: TransactionState | null,
+  action: string,
+): string {
+  if (state?.phase === "awaiting-signature") return "Confirm in Wallet…";
+  if (state?.phase === "verifying") return "Verifying Receipt Evidence…";
+  return `${action}…`;
+}
+
+function submittedTransactionHash(
+  state: TransactionState | null,
+): string | null {
+  if (!state || state.phase === "awaiting-signature") return null;
+  if (state.phase === "failed" && state.receipt?.status === "reverted") {
+    return null;
+  }
+  return "hash" in state ? (state.hash ?? null) : null;
+}
+
+function successfulReceiptHash(state: TransactionState | null): string | null {
+  if (!state) return null;
+  if (state.phase === "confirmed") return state.receipt.transactionHash;
+  if (state.phase === "failed" && state.receipt?.status === "success") {
+    return state.receipt.transactionHash;
+  }
+  return null;
 }

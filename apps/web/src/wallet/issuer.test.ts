@@ -12,7 +12,19 @@ import { encodeEventTopics, encodeAbiParameters } from "viem";
 const MOCK_ISSUER = "0x1111111111111111111111111111111111111111";
 const MOCK_TOKEN = "0x2222222222222222222222222222222222222222";
 const MOCK_VAULT = "0x3333333333333333333333333333333333333333";
+const MOCK_FACTORY = "0x8888888888888888888888888888888888888888";
 const MOCK_USDC = "0x054ed45810DbBAb8B27668922D110669c9D88D0a";
+
+const EXPECTED_ISSUER_EVENT = {
+  administrator: MOCK_ISSUER,
+  factoryAddress: MOCK_FACTORY,
+  issuer: MOCK_ISSUER,
+  name: "Test USD",
+  pauser: MOCK_ISSUER,
+  reserveAsset: MOCK_USDC,
+  reserveOperator: MOCK_ISSUER,
+  symbol: "TUSD",
+} as const;
 
 describe("Issuer Creation & Mint Engine", () => {
   describe("6-Decimal Amount Handling", () => {
@@ -84,6 +96,27 @@ describe("Issuer Creation & Mint Engine", () => {
       expect(result.errors.reserveAmount).toBeDefined();
       expect(result.errors.recipient).toBeDefined();
     });
+
+    it("rejects the zero address for every authority and recipient", () => {
+      const zero = "0x0000000000000000000000000000000000000000";
+      const result = validateIssuerFormData({
+        name: "Test USD",
+        symbol: "TUSD",
+        administrator: zero,
+        reserveOperator: zero,
+        pauser: zero,
+        reserveAmount: "1",
+        recipient: zero,
+      });
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toMatchObject({
+        administrator: expect.any(String),
+        pauser: expect.any(String),
+        recipient: expect.any(String),
+        reserveOperator: expect.any(String),
+      });
+    });
   });
 
   describe("extractIssuerCreatedEvent", () => {
@@ -122,7 +155,7 @@ describe("Issuer Creation & Mint Engine", () => {
       const mockReceipt = {
         logs: [
           {
-            address: MOCK_ISSUER,
+            address: MOCK_FACTORY,
             topics,
             data,
             blockNumber: 100n,
@@ -131,13 +164,57 @@ describe("Issuer Creation & Mint Engine", () => {
         ],
       };
 
-      const discovered = extractIssuerCreatedEvent(mockReceipt as any);
+      const discovered = extractIssuerCreatedEvent(
+        mockReceipt as any,
+        EXPECTED_ISSUER_EVENT,
+      );
       expect(discovered.token).toBe(MOCK_TOKEN);
       expect(discovered.vault).toBe(MOCK_VAULT);
       expect(discovered.reserveAsset).toBe(MOCK_USDC);
       expect(discovered.version).toBe(1n);
       expect(discovered.name).toBe("Test USD");
       expect(discovered.symbol).toBe("TUSD");
+    });
+
+    it("rejects a matching event signature emitted by any address other than the configured factory", () => {
+      const topics = encodeEventTopics({
+        abi: factoryAbi,
+        eventName: "IssuerCreated",
+        args: {
+          issuer: MOCK_ISSUER,
+          token: MOCK_TOKEN,
+          vault: MOCK_VAULT,
+        },
+      });
+      const data = encodeAbiParameters(
+        [
+          { name: "reserveAsset", type: "address" },
+          { name: "version", type: "uint64" },
+          { name: "administrator", type: "address" },
+          { name: "reserveOperator", type: "address" },
+          { name: "pauser", type: "address" },
+          { name: "name", type: "string" },
+          { name: "symbol", type: "string" },
+        ],
+        [
+          MOCK_USDC,
+          1n,
+          MOCK_ISSUER,
+          MOCK_ISSUER,
+          MOCK_ISSUER,
+          "Test USD",
+          "TUSD",
+        ],
+      );
+
+      expect(() =>
+        extractIssuerCreatedEvent(
+          {
+            logs: [{ address: MOCK_ISSUER, topics, data }],
+          } as any,
+          EXPECTED_ISSUER_EVENT,
+        ),
+      ).toThrow(/expected exactly one IssuerCreated event/);
     });
   });
 
@@ -194,6 +271,30 @@ describe("Issuer Creation & Mint Engine", () => {
       expect(result.isReconciled).toBe(false);
       expect(result.reconciliationError).toContain(
         "CRITICAL INVARIANT VIOLATION: Vault reserve balance (50) is less than total token supply (100)",
+      );
+    });
+
+    it("rejects success when the recipient balance does not match the requested mint", async () => {
+      const mockClient = {
+        readContract: vi.fn().mockImplementation(({ functionName }) => {
+          if (functionName === "reserveBalance") return 100_000_000n;
+          if (functionName === "totalSupply") return 100_000_000n;
+          if (functionName === "balanceOf") return 99_000_000n;
+          return Promise.reject(new Error("Unknown function"));
+        }),
+      };
+
+      const result = await reconcileIssuerMint({
+        vaultAddress: MOCK_VAULT,
+        tokenAddress: MOCK_TOKEN,
+        recipient: MOCK_ISSUER,
+        expectedMintAmount: 100_000_000n,
+        client: mockClient as any,
+      });
+
+      expect(result.isReconciled).toBe(false);
+      expect(result.reconciliationError).toContain(
+        "Recipient reconciliation mismatch",
       );
     });
   });

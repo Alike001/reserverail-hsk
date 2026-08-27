@@ -91,6 +91,30 @@ describe("HSK transaction lifecycle", () => {
 
     expect(verify).not.toHaveBeenCalled();
   });
+
+  it("preserves the successful receipt when a later authoritative post-read fails", async () => {
+    const states: TransactionState[] = [];
+    const receipt = makeReceipt("success");
+
+    await expect(
+      executeHskTransaction({
+        getChainId: async () => 177,
+        onState: (state) => states.push(state),
+        send: async () => HASH,
+        verify: async () => {
+          throw new Error("RPC post-read unavailable");
+        },
+        waitForReceipt: async () => receipt,
+      }),
+    ).rejects.toThrow("RPC post-read unavailable");
+
+    expect(states.at(-1)).toMatchObject({
+      failedAt: "verifying",
+      hash: HASH,
+      phase: "failed",
+      receipt: { status: "success", transactionHash: HASH },
+    });
+  });
 });
 
 function makeReceipt(status: "reverted" | "success"): TransactionReceipt {

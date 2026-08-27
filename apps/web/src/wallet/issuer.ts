@@ -5,6 +5,7 @@ import {
   isAddress,
   parseEventLogs,
   parseUnits,
+  zeroAddress,
   type Address,
   type TransactionReceipt,
   type WalletClient,
@@ -246,29 +247,97 @@ export function formatReserveUnits(amount: bigint): string {
  */
 export function extractIssuerCreatedEvent(
   receipt: TransactionReceipt,
+  expected: {
+    administrator: Address;
+    factoryAddress: Address;
+    issuer: Address;
+    name: string;
+    pauser: Address;
+    reserveAsset: Address;
+    reserveOperator: Address;
+    symbol: string;
+  },
 ): DiscoveredIssuerPair {
+  const expectedFactory = getAddress(expected.factoryAddress);
   const logs = parseEventLogs({
     abi: factoryAbi,
     eventName: "IssuerCreated",
-    logs: receipt.logs,
+    logs: receipt.logs.filter(
+      (log) => getAddress(log.address) === expectedFactory,
+    ),
+    strict: true,
   });
 
-  if (!logs || logs.length === 0) {
+  if (logs.length !== 1) {
     throw new WalletOperationError(
       "unknown",
-      "Factory transaction confirmed, but no IssuerCreated event was found in the receipt logs.",
+      `Factory transaction confirmed, but expected exactly one IssuerCreated event from ${expectedFactory}; found ${logs.length}.`,
     );
   }
 
   const event = logs[0];
-  const { issuer, token, vault, reserveAsset, version, name, symbol } =
-    event.args;
+  const {
+    administrator,
+    issuer,
+    name,
+    pauser,
+    reserveAsset,
+    reserveOperator,
+    symbol,
+    token,
+    vault,
+    version,
+  } = event.args;
+
+  const discoveredIssuer = getAddress(issuer);
+  const discoveredToken = getAddress(token);
+  const discoveredVault = getAddress(vault);
+  const discoveredReserve = getAddress(reserveAsset);
+
+  if (discoveredIssuer !== getAddress(expected.issuer)) {
+    throw new WalletOperationError(
+      "unknown",
+      "IssuerCreated evidence does not identify the connected issuer account.",
+    );
+  }
+
+  if (discoveredReserve !== getAddress(expected.reserveAsset)) {
+    throw new WalletOperationError(
+      "unknown",
+      "IssuerCreated evidence does not match the configured HSK USDC.e reserve asset.",
+    );
+  }
+
+  if (
+    getAddress(administrator) !== getAddress(expected.administrator) ||
+    getAddress(reserveOperator) !== getAddress(expected.reserveOperator) ||
+    getAddress(pauser) !== getAddress(expected.pauser)
+  ) {
+    throw new WalletOperationError(
+      "unknown",
+      "IssuerCreated evidence does not match the reviewed authority configuration.",
+    );
+  }
+
+  if (name !== expected.name.trim() || symbol !== expected.symbol.trim()) {
+    throw new WalletOperationError(
+      "unknown",
+      "IssuerCreated evidence does not match the reviewed token metadata.",
+    );
+  }
+
+  if (discoveredToken === discoveredVault) {
+    throw new WalletOperationError(
+      "unknown",
+      "IssuerCreated evidence returned the same address for token and vault.",
+    );
+  }
 
   return {
-    issuer: getAddress(issuer),
-    token: getAddress(token),
-    vault: getAddress(vault),
-    reserveAsset: getAddress(reserveAsset),
+    issuer: discoveredIssuer,
+    token: discoveredToken,
+    vault: discoveredVault,
+    reserveAsset: discoveredReserve,
     version: BigInt(version),
     name,
     symbol,
@@ -278,6 +347,7 @@ export function extractIssuerCreatedEvent(
 export interface ExecuteCreateIssuerOptions {
   factoryAddress: Address;
   params: CreateIssuerParams;
+  reserveAssetAddress: Address;
   walletClient: WalletClient;
   account: Address;
   onState?: (state: TransactionState) => void;
@@ -289,6 +359,7 @@ export interface ExecuteCreateIssuerOptions {
 export async function executeCreateIssuer({
   factoryAddress,
   params,
+  reserveAssetAddress,
   walletClient,
   account,
   onState = () => undefined,
@@ -320,7 +391,16 @@ export async function executeCreateIssuer({
       });
     },
     verify: async (receipt) => {
-      return extractIssuerCreatedEvent(receipt);
+      return extractIssuerCreatedEvent(receipt, {
+        administrator: params.administrator,
+        factoryAddress,
+        issuer: account,
+        name: params.name,
+        pauser: params.pauser,
+        reserveAsset: reserveAssetAddress,
+        reserveOperator: params.reserveOperator,
+        symbol: params.symbol,
+      });
     },
   });
 }
@@ -332,6 +412,36 @@ export interface ExecuteApproveReserveOptions {
   walletClient: WalletClient;
   account: Address;
   onState?: (state: TransactionState) => void;
+}
+
+export async function verifyReserveAllowance({
+  reserveAssetAddress,
+  owner,
+  spender,
+  amount,
+  client = hskPublicClient,
+}: {
+  reserveAssetAddress: Address;
+  owner: Address;
+  spender: Address;
+  amount: bigint;
+  client?: typeof hskPublicClient;
+}): Promise<bigint> {
+  const allowance = await client.readContract({
+    address: reserveAssetAddress,
+    abi: erc20Abi,
+    functionName: "allowance",
+    args: [owner, spender],
+  });
+
+  if (allowance < amount) {
+    throw new WalletOperationError(
+      "rpc",
+      `Authoritative post-read showed insufficient allowance: confirmed ${allowance.toString()}, required ${amount.toString()}.`,
+    );
+  }
+
+  return allowance;
 }
 
 /**
@@ -365,24 +475,13 @@ export async function executeApproveReserve({
         chain: null,
       });
     },
-    verify: async () => {
-      // Authoritative read: verify allowance
-      const allowance = await hskPublicClient.readContract({
-        address: reserveAssetAddress,
-        abi: erc20Abi,
-        functionName: "allowance",
-        args: [account, spender],
-      });
-
-      if (allowance < amount) {
-        throw new WalletOperationError(
-          "rpc",
-          `Authoritative post-read showed insufficient allowance: confirmed ${allowance.toString()}, required ${amount.toString()}.`,
-        );
-      }
-
-      return allowance;
-    },
+    verify: async () =>
+      verifyReserveAllowance({
+        reserveAssetAddress,
+        owner: account,
+        spender,
+        amount,
+      }),
   });
 }
 
@@ -491,13 +590,23 @@ export async function reconcileIssuerMint({
     };
   }
 
-  if (tokenTotalSupply < expectedMintAmount) {
+  if (tokenTotalSupply !== expectedMintAmount) {
     return {
       vaultReserveBalance,
       tokenTotalSupply,
       recipientBalance,
       isReconciled: false,
-      reconciliationError: `Supply reconciliation mismatch: total supply (${formatReserveUnits(tokenTotalSupply)}) is less than expected minted amount (${formatReserveUnits(expectedMintAmount)}).`,
+      reconciliationError: `Supply reconciliation mismatch: total supply (${formatReserveUnits(tokenTotalSupply)}) does not equal expected minted amount (${formatReserveUnits(expectedMintAmount)}).`,
+    };
+  }
+
+  if (recipientBalance !== expectedMintAmount) {
+    return {
+      vaultReserveBalance,
+      tokenTotalSupply,
+      recipientBalance,
+      isReconciled: false,
+      reconciliationError: `Recipient reconciliation mismatch: recipient balance (${formatReserveUnits(recipientBalance)}) does not equal expected minted amount (${formatReserveUnits(expectedMintAmount)}).`,
     };
   }
 
@@ -527,16 +636,16 @@ export function validateIssuerFormData(form: {
   if (!form.name.trim()) errors.name = "Stablecoin name is required.";
   if (!form.symbol.trim()) errors.symbol = "Stablecoin symbol is required.";
 
-  if (!form.administrator.trim() || !isAddress(form.administrator.trim())) {
+  if (!isNonZeroAddress(form.administrator)) {
     errors.administrator = "Valid EVM administrator address required.";
   }
-  if (!form.reserveOperator.trim() || !isAddress(form.reserveOperator.trim())) {
+  if (!isNonZeroAddress(form.reserveOperator)) {
     errors.reserveOperator = "Valid EVM reserve operator address required.";
   }
-  if (!form.pauser.trim() || !isAddress(form.pauser.trim())) {
+  if (!isNonZeroAddress(form.pauser)) {
     errors.pauser = "Valid EVM pauser address required.";
   }
-  if (!form.recipient.trim() || !isAddress(form.recipient.trim())) {
+  if (!isNonZeroAddress(form.recipient)) {
     errors.recipient = "Valid EVM recipient address required.";
   }
 
@@ -550,4 +659,9 @@ export function validateIssuerFormData(form: {
     errors,
     parsedAmount: amountResult.amount,
   };
+}
+
+function isNonZeroAddress(value: string): value is Address {
+  const trimmed = value.trim();
+  return isAddress(trimmed) && getAddress(trimmed) !== zeroAddress;
 }

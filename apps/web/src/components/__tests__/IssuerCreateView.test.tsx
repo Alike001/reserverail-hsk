@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { IssuerCreateView } from "../IssuerCreateView";
 import * as issuerModule from "../../wallet/issuer";
+import { WalletOperationError } from "../../wallet/errors";
 import { createWalletStore } from "../../wallet/store";
 import type { InjectedProvider } from "../../wallet/provider";
 
@@ -99,8 +100,13 @@ describe("IssuerCreateView", () => {
       isReconciled: true,
     });
 
+    const onSuccessNavigate = vi.fn();
     render(
-      <IssuerCreateView store={store} factoryAddressOverride={MOCK_FACTORY} />,
+      <IssuerCreateView
+        store={store}
+        factoryAddressOverride={MOCK_FACTORY}
+        onSuccessNavigate={onSuccessNavigate}
+      />,
     );
 
     fireEvent.change(screen.getByLabelText("Stablecoin Name"), {
@@ -150,6 +156,194 @@ describe("IssuerCreateView", () => {
       expect(screen.getByText("🛡️ 100% Reserve Backed")).toBeDefined();
       expect(screen.getByText(/100 USDC\.e/)).toBeDefined();
     });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Manage Vault Controls" }),
+    );
+    expect(onSuccessNavigate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        token: MOCK_TOKEN,
+        vault: MOCK_VAULT,
+      }),
+    );
+  });
+
+  it("retries only reconciliation after a confirmed mint and never resubmits depositAndMint", async () => {
+    const provider = new MockInjectedProvider(177, [MOCK_ACCOUNT]);
+    const store = createWalletStore(provider.asInjected());
+    await store.initialize();
+
+    vi.spyOn(issuerModule, "executeCreateIssuer").mockResolvedValue({
+      receipt: { transactionHash: MOCK_TX } as any,
+      result: {
+        issuer: MOCK_ACCOUNT,
+        token: MOCK_TOKEN,
+        vault: MOCK_VAULT,
+        reserveAsset: issuerModule.HSK_MAINNET_USDC_E,
+        version: 1n,
+        name: "Reserve USD",
+        symbol: "RUSD",
+      },
+    });
+    vi.spyOn(issuerModule, "executeApproveReserve").mockResolvedValue({
+      receipt: { transactionHash: MOCK_TX } as any,
+      result: 100_000_000n,
+    });
+    const executeMint = vi
+      .spyOn(issuerModule, "executeDepositAndMint")
+      .mockResolvedValue({
+        receipt: { transactionHash: MOCK_TX } as any,
+        result: 100_000_000n,
+      });
+    const reconcile = vi
+      .spyOn(issuerModule, "reconcileIssuerMint")
+      .mockResolvedValueOnce({
+        vaultReserveBalance: 100_000_000n,
+        tokenTotalSupply: 100_000_000n,
+        recipientBalance: 0n,
+        isReconciled: false,
+        reconciliationError:
+          "Recipient reconciliation mismatch: recipient balance is 0.",
+      })
+      .mockResolvedValueOnce({
+        vaultReserveBalance: 100_000_000n,
+        tokenTotalSupply: 100_000_000n,
+        recipientBalance: 100_000_000n,
+        isReconciled: true,
+      });
+
+    render(
+      <IssuerCreateView store={store} factoryAddressOverride={MOCK_FACTORY} />,
+    );
+    fireEvent.change(screen.getByLabelText("Stablecoin Name"), {
+      target: { value: "Reserve USD" },
+    });
+    fireEvent.change(screen.getByLabelText("Token Symbol"), {
+      target: { value: "RUSD" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Review Pre-Sign Sequence" }),
+    );
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "Proceed to Step 1 Signature",
+      }),
+    );
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Sign Step 2 Approval" }),
+    );
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Sign Step 3 Mint" }),
+    );
+
+    const retryVerification = await screen.findByRole("button", {
+      name: "Retry On-Chain Verification",
+    });
+    expect(screen.getByText("MINTED · VERIFICATION NEEDED")).toBeDefined();
+    expect(screen.getByText(/Recipient reconciliation mismatch/)).toBeDefined();
+    expect(executeMint).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(retryVerification);
+    await waitFor(() => {
+      expect(
+        screen.getByText("Stablecoin Deployed & Reconciled"),
+      ).toBeDefined();
+    });
+    expect(executeMint).toHaveBeenCalledTimes(1);
+    expect(reconcile).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not resubmit mint when its receipt succeeded but the first post-read failed", async () => {
+    const provider = new MockInjectedProvider(177, [MOCK_ACCOUNT]);
+    const store = createWalletStore(provider.asInjected());
+    await store.initialize();
+
+    vi.spyOn(issuerModule, "executeCreateIssuer").mockResolvedValue({
+      receipt: { transactionHash: MOCK_TX } as any,
+      result: {
+        issuer: MOCK_ACCOUNT,
+        token: MOCK_TOKEN,
+        vault: MOCK_VAULT,
+        reserveAsset: issuerModule.HSK_MAINNET_USDC_E,
+        version: 1n,
+        name: "Reserve USD",
+        symbol: "RUSD",
+      },
+    });
+    vi.spyOn(issuerModule, "executeApproveReserve").mockResolvedValue({
+      receipt: { transactionHash: MOCK_TX } as any,
+      result: 100_000_000n,
+    });
+
+    const successfulReceipt = {
+      status: "success",
+      transactionHash: MOCK_TX,
+    } as any;
+    const postReadError = new WalletOperationError(
+      "rpc",
+      "Mint receipt succeeded, but the reserve post-read was unavailable.",
+    );
+    const executeMint = vi
+      .spyOn(issuerModule, "executeDepositAndMint")
+      .mockImplementation(async ({ onState }) => {
+        onState?.({
+          error: postReadError,
+          failedAt: "verifying",
+          hash: MOCK_TX,
+          phase: "failed",
+          receipt: successfulReceipt,
+        });
+        throw postReadError;
+      });
+    const reconcile = vi
+      .spyOn(issuerModule, "reconcileIssuerMint")
+      .mockResolvedValue({
+        vaultReserveBalance: 100_000_000n,
+        tokenTotalSupply: 100_000_000n,
+        recipientBalance: 100_000_000n,
+        isReconciled: true,
+      });
+
+    render(
+      <IssuerCreateView store={store} factoryAddressOverride={MOCK_FACTORY} />,
+    );
+    fireEvent.change(screen.getByLabelText("Stablecoin Name"), {
+      target: { value: "Reserve USD" },
+    });
+    fireEvent.change(screen.getByLabelText("Token Symbol"), {
+      target: { value: "RUSD" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Review Pre-Sign Sequence" }),
+    );
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "Proceed to Step 1 Signature",
+      }),
+    );
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Sign Step 2 Approval" }),
+    );
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Sign Step 3 Mint" }),
+    );
+
+    const retryVerification = await screen.findByRole("button", {
+      name: "Retry On-Chain Verification",
+    });
+    expect(
+      screen.getByText(/Mint receipt succeeded, but the reserve post-read/),
+    ).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Retry Step 3" })).toBeNull();
+
+    fireEvent.click(retryVerification);
+    await waitFor(() => {
+      expect(
+        screen.getByText("Stablecoin Deployed & Reconciled"),
+      ).toBeDefined();
+    });
+    expect(executeMint).toHaveBeenCalledTimes(1);
+    expect(reconcile).toHaveBeenCalledTimes(1);
   });
 });
 

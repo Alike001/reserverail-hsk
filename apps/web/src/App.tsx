@@ -1,8 +1,9 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState } from "react";
 import "./App.css";
 import { Header } from "./components/Header";
 import { LandingView } from "./components/LandingView";
 import { PilotRoute } from "./components/PilotRoute";
+import type { Address } from "./config/hsk";
 import { useRoute } from "./hooks/useRoute";
 
 const AccessAndEmergencyControls = lazy(() =>
@@ -19,6 +20,10 @@ const IssuerCreateView = lazy(() =>
 
 function App() {
   const { route, navigate } = useRoute();
+  const [managedPair, setManagedPair] = useState<{
+    token: Address;
+    vault: Address;
+  } | null>(null);
 
   return (
     <div className="app-container">
@@ -38,7 +43,12 @@ function App() {
               </div>
             }
           >
-            <IssuerCreateView onSuccessNavigate={() => navigate("controls")} />
+            <IssuerCreateView
+              onSuccessNavigate={(pair) => {
+                setManagedPair(pair);
+                navigate("controls");
+              }}
+            />
           </Suspense>
         ) : (
           <Suspense
@@ -49,7 +59,10 @@ function App() {
               </div>
             }
           >
-            <AccessAndEmergencyControls />
+            <AccessAndEmergencyControls
+              tokenAddressOverride={managedPair?.token}
+              vaultAddressOverride={managedPair?.vault}
+            />
           </Suspense>
         )}
       </main>
