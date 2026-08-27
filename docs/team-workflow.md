@@ -13,6 +13,16 @@ to review, and likely to create merge conflicts.
 
 ## Repository Setup
 
+Setup evidence as of **2026-08-27**:
+
+- Public repository: [Alike001/reserverail-hsk](https://github.com/Alike001/reserverail-hsk)
+- Default branch: `main`
+- Active ruleset: [Protect main](https://github.com/Alike001/reserverail-hsk/rules/21609595)
+- Enforced: pull request, one approval, last-push approval, resolved conversations, linear
+  history, no deletion, and no force push.
+- Merge method: squash only; merged branches are deleted automatically.
+- Required CI status checks remain intentionally unset until real Phase 2 jobs run once.
+
 The repository owner should:
 
 1. Create a **public** GitHub repository. Public visibility also supports the hackathon's source
@@ -95,7 +105,7 @@ Use one label from each relevant group:
 - Type: `type:feature`, `type:bug`, `type:test`, `type:docs`, `type:security`, `type:chore`
 - Area: `area:contracts`, `area:web`, `area:hsk`, `area:devops`, `area:product`
 - Priority: `priority:p0`, `priority:p1`, `priority:p2`
-- State: `status:ready`, `status:blocked`, `status:needs-decision`
+- State: `status:ready`, `status:in-review`, `status:blocked`, `status:needs-decision`
 - Risk: `risk:funds`, `risk:privileged`, `risk:mainnet`
 
 ## Claiming Work

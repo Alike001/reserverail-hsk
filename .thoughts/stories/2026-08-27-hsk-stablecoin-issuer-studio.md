@@ -1,6 +1,6 @@
 # Stories: ReserveRail
 
-Status: **Draft for team approval**  
+Status: **Phase 1 proposal for team approval**
 Date: **2026-08-27**
 
 ## Traceability
@@ -22,6 +22,14 @@ These stories derive from the requirement IDs in
 | S-10 Redeem stablecoins | FR-030–FR-033 |
 | S-11 Respond to an incident | FR-043–FR-044, FR-063 |
 | S-12 Run and review the repository | FR-080–FR-083 |
+
+## Submission Priority
+
+- **P0 judged path:** S-01–S-05, standard-transfer slice of S-09, S-10–S-12.
+- **P1 only after P0 works:** bounded batch slice of S-07.
+- **Post-submission:** S-06 allowlist mode and S-08 Merkle claim campaigns.
+
+Deferred stories must not appear as enabled product actions or be described as live.
 
 ## Story 1: Understand the product immediately
 
@@ -312,9 +320,9 @@ Cold dependency-download time is not falsely included in the hosted 30-second ac
 
 ## Open Questions
 
-- Which use case anchors the product copy and live pilot distribution?
-- Which operations remain available during an emergency pause?
-- Does a restricted holder always retain self-service redemption, or must an authorized
-  redemption operator be involved?
+- The live pilot is anchored on an RWA/fintech settlement distribution.
+- Operational pause blocks mint and transfer/distribution but preserves redemption.
+- When allowlists are added after submission, a delisted holder retains self-service
+  redemption so policy changes cannot strand backed value.
 - Will the team add a real sponsored-transaction service, or clearly require holder HSK gas?
 - What maximum batch and campaign sizes meet measured HSK limits?

@@ -5,6 +5,9 @@
 
 Status: **Phase 1 product definition**. No product contracts or live deployment exist yet.
 
+[Hackathon submission](https://luma.com/t6gj441t) closes **2026-08-27 at 14:00 WAT**. The
+official event format is a three-minute showcase followed by two minutes of Q&A.
+
 The proposed product lets an issuer deposit HSK mainnet USDC.e into an isolated reserve vault,
 mint the same quantity of a branded stablecoin, configure operational access, distribute funded
 tokens, and offer 1:1 redemption. A public proof page will expose supply, reserve, policy,
@@ -17,7 +20,10 @@ Deposit USDC.e → Mint → Distribute → Redeem
 ## Start Here
 
 - [Product specification](./.thoughts/specs/2026-08-27-hsk-stablecoin-issuer-studio.md)
+- [Phase 1 decisions](./docs/phase-1-decisions.md)
 - [User stories](./.thoughts/stories/2026-08-27-hsk-stablecoin-issuer-studio.md)
+- [Product surface map](./.thoughts/design/2026-08-27-product-surface-map.md)
+- [Interaction wireframe](./docs/interaction-wireframe.md)
 - [Threat model](./docs/threat-model.md)
 - [Build plan](./.thoughts/plans/2026-08-26-hsk-stablecoin-issuer-studio.md)
 - [Team workflow](./docs/team-workflow.md)
