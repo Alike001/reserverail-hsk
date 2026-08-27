@@ -14,6 +14,10 @@ forge test --root contracts
 The deterministic stateful-invariant, coverage, and gas-snapshot commands and their latest
 results are recorded in [`VERIFICATION.md`](./VERIFICATION.md).
 
+Pinned Slither configuration, reviewed finding dispositions, dependency provenance, and the
+machine-readable report are recorded in
+[`reports/SLITHER_REVIEW.md`](./reports/SLITHER_REVIEW.md).
+
 Production financial contracts must arrive through their dedicated security-reviewed issues.
 
 ## HSK mainnet USDC.e fork proof

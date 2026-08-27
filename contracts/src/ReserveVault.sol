@@ -101,6 +101,10 @@ contract ReserveVault {
         emit Initialized(msg.sender, reserveAsset_, issuerToken_, administrator_, reserveOperator_, pauser_);
     }
 
+    // Slither's reentrancy-balance detector does not recognize this contract's custom guard.
+    // Both balance-delta entry points are protected by nonReentrant, and the before/after reads
+    // deliberately reject reentrant, fee-on-transfer, and rebasing reserve behavior.
+    // slither-disable-start reentrancy-balance
     function depositAndMint(uint256 reserveAmount, address recipient) external nonReentrant {
         if (msg.sender != reserveOperator) revert Unauthorized();
         if (operationallyPaused) revert OperationallyPaused();
@@ -114,6 +118,8 @@ contract ReserveVault {
         uint256 afterBalance = IERC20Reserve(reserveAsset).balanceOf(address(this));
         if (afterBalance < beforeBalance) revert InvalidAmountReceived();
         uint256 received = afterBalance - beforeBalance;
+        // Exact equality is the backing invariant: one received reserve base unit mints one token base unit.
+        // slither-disable-next-line incorrect-equality
         if (received == 0 || received != reserveAmount) revert InvalidAmountReceived();
 
         IssuerStablecoin(issuerToken).mint(recipient, received);
@@ -143,6 +149,11 @@ contract ReserveVault {
         emit Redeemed(msg.sender, issuerToken, recipient, tokenAmount, tokenAmount);
     }
 
+    // slither-disable-end reentrancy-balance
+
+    // The paired token clone is validated during initialization and can only call back into a
+    // transition whose state has already changed, so Slither's event-order warning is not reachable.
+    // slither-disable-start reentrancy-events
     function pause() external {
         if (msg.sender != pauser && msg.sender != administrator) revert Unauthorized();
         if (operationallyPaused) revert AlreadyPaused();
@@ -160,14 +171,14 @@ contract ReserveVault {
         IssuerStablecoin(issuerToken).setOperationalPause(false);
         emit Unpaused(msg.sender);
     }
+    // slither-disable-end reentrancy-events
 
     function rotateRole(bytes32 role, address newAccount) external {
         if (msg.sender != administrator) revert Unauthorized();
         if (newAccount == address(0)) revert ZeroAddress();
 
-        address previousAccount;
+        address previousAccount = administrator;
         if (role == ADMINISTRATOR_ROLE) {
-            previousAccount = administrator;
             if (newAccount == previousAccount) revert RoleUnchanged();
             administrator = newAccount;
         } else if (role == RESERVE_OPERATOR_ROLE) {

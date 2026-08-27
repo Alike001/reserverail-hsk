@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.30;
+pragma solidity 0.8.30;
 
 interface IIssuerStablecoin {
     event Approval(address indexed owner, address indexed spender, uint256 value);
@@ -12,7 +12,7 @@ interface IIssuerStablecoin {
     event Unpaused(address indexed account);
     event RoleRotated(bytes32 indexed role, address indexed previousAccount, address indexed newAccount);
 
-    function initialize(string calldata name_, string calldata symbol_, address administrator, address vault) external;
+    function initialize(string calldata name_, string calldata symbol_, address administrator_, address vault_) external;
 
     function name() external view returns (string memory);
     function symbol() external view returns (string memory);

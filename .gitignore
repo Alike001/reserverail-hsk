@@ -8,6 +8,7 @@ cache/
 artifacts/
 contracts/lib/
 broadcast/
+contracts/reports/slither.sarif
 
 # Local configuration and secrets
 .env
