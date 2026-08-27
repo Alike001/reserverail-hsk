@@ -1,0 +1,55 @@
+@media (max-width: 900px) {
+  .four-step-flow,
+  .features-grid,
+  .manifest-grid,
+  .manifest-details-grid,
+  .skeleton-grid,
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .header-container {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 14px 0;
+  }
+
+  .header-meta {
+    order: 3;
+  }
+
+  .site-nav {
+    width: 100%;
+  }
+
+  .hero-title {
+    font-size: 36px;
+  }
+
+  .four-step-flow,
+  .features-grid,
+  .manifest-grid,
+  .manifest-details-grid,
+  .skeleton-grid,
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-actions,
+  .footer-container,
+  .state-banner {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+  }
+
+  .tx-item {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+}

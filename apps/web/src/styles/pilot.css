@@ -1,0 +1,264 @@
+.pilot-route-view,
+.pilot-undeployed-state,
+.pilot-deployed-state {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.pilot-route-view {
+  gap: 32px;
+}
+
+.pilot-header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.btn-back {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  color: var(--muted);
+  background: transparent;
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.btn-back:hover {
+  color: var(--text);
+}
+
+.pilot-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pilot-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.pilot-title-row h1 {
+  margin: 0;
+  color: var(--text);
+  font-size: 32px;
+}
+
+.pilot-subtitle,
+.future-proof-desc,
+.error-note,
+.empty-state-text {
+  color: var(--muted);
+}
+
+.pilot-subtitle,
+.future-proof-desc,
+.empty-state-text {
+  margin: 0;
+}
+
+.state-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 24px;
+  border-radius: 16px;
+}
+
+.state-banner-undeployed {
+  border: 1px solid var(--warning-border);
+  background: var(--warning-bg);
+}
+
+.banner-icon {
+  font-size: 28px;
+}
+
+.banner-text {
+  flex: 1;
+}
+
+.banner-text h2,
+.truth-commitment-box h3,
+.future-proof-container h3,
+.contract-links-box h2,
+.transactions-box h2 {
+  margin: 0 0 8px;
+  color: var(--text);
+}
+
+.banner-text h2 {
+  color: var(--warning);
+  font-size: 20px;
+}
+
+.banner-text p,
+.truth-commitment-box p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.pill-badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.pill-undeployed {
+  color: #090c0f;
+  background: var(--warning);
+}
+
+.truth-commitment-box,
+.future-proof-container,
+.pilot-state-card,
+.contract-links-box,
+.transactions-box {
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.truth-commitment-box p {
+  color: var(--muted);
+}
+
+.truth-commitment-box ul {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding-left: 20px;
+}
+
+.manifest-details-grid,
+.skeleton-grid,
+.metrics-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.manifest-details-grid {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.skeleton-grid,
+.metrics-grid {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.detail-card,
+.skeleton-card,
+.metric-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-raised);
+}
+
+.card-label,
+.skeleton-label,
+.metric-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.card-value,
+.skeleton-value,
+.metric-value {
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 750;
+}
+
+.future-proof-container {
+  border-style: dashed;
+}
+
+.future-proof-desc {
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+
+.pilot-state-card {
+  text-align: center;
+}
+
+.pilot-state-card h2 {
+  margin-top: 0;
+}
+
+.pilot-error {
+  border-color: var(--error-border);
+  background: var(--error-bg);
+}
+
+.pilot-error h2 {
+  color: var(--error);
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  margin: 0 auto;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.contract-links-box ul,
+.tx-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.contract-links-box li {
+  margin-top: 10px;
+  overflow-wrap: anywhere;
+}
+
+.contract-links-box a,
+.tx-hash {
+  color: var(--accent);
+}
+
+.tx-item {
+  display: grid;
+  grid-template-columns: 120px 1fr auto;
+  gap: 16px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+
+.tx-type {
+  color: var(--text);
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}

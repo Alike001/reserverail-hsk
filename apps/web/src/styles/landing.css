@@ -1,0 +1,268 @@
+.landing-view {
+  display: flex;
+  flex-direction: column;
+  gap: 64px;
+}
+
+.hero-section {
+  padding: 32px 0 16px;
+}
+
+.hero-content {
+  max-width: 960px;
+}
+
+.eyebrow,
+.flow-heading {
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.eyebrow {
+  margin: 0 0 16px;
+}
+
+.hero-title {
+  margin: 0;
+  color: var(--text);
+  font-size: clamp(36px, 5.5vw, 68px);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+}
+
+.hero-lede {
+  max-width: 760px;
+  margin: 24px 0 36px;
+  color: var(--muted);
+  font-size: clamp(17px, 2vw, 22px);
+  line-height: 1.55;
+}
+
+.flow-container {
+  margin: 36px 0;
+}
+
+.flow-heading {
+  margin: 0 0 12px;
+  color: var(--muted);
+}
+
+.four-step-flow,
+.features-grid,
+.manifest-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.four-step-flow {
+  grid-template-columns: repeat(4, 1fr);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.flow-step,
+.feature-card,
+.manifest-card,
+.manifest-item {
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.flow-step {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.step-badge {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--accent);
+  background: var(--surface-raised);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.step-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.step-title {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 750;
+}
+
+.step-desc {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.step-connector {
+  display: none;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 28px;
+}
+
+.btn {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 24px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn-primary {
+  color: #090c0f;
+  background: var(--text);
+}
+
+.btn-primary.btn-undeployed {
+  border-color: var(--warning-border);
+  color: var(--warning);
+  background: var(--warning-bg);
+}
+
+.btn-secondary {
+  border-color: var(--border);
+  color: var(--text);
+  background: var(--surface);
+}
+
+.action-subtext,
+.feature-card p,
+.manifest-truth-note {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.action-subtext {
+  margin: 12px 0 0;
+  font-size: 13px;
+}
+
+.section-title {
+  margin: 0 0 24px;
+  color: var(--text);
+  font-size: 24px;
+}
+
+.features-grid,
+.manifest-grid {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.feature-card {
+  padding: 24px;
+  border-radius: 14px;
+}
+
+.feature-icon {
+  margin-bottom: 12px;
+  font-size: 24px;
+}
+
+.feature-card h3 {
+  margin: 0 0 8px;
+  color: var(--text);
+  font-size: 17px;
+}
+
+.feature-card p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.manifest-card {
+  padding: 28px;
+  border-radius: 16px;
+}
+
+.manifest-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.manifest-header h2 {
+  margin: 4px 0 0;
+  color: var(--text);
+  font-size: 22px;
+}
+
+.manifest-status-pill {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.status-undeployed {
+  border: 1px solid var(--warning-border);
+  color: var(--warning);
+  background: var(--warning-bg);
+}
+
+.status-deployed {
+  border: 1px solid rgb(102 227 173 / 35%);
+  color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.manifest-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: var(--surface-raised);
+}
+
+.item-label {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.item-value {
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.manifest-truth-note {
+  margin: 20px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+}
