@@ -1,59 +1,73 @@
 # ReserveRail
 
-> Launch a branded, USDC-backed stablecoin on HSK Chain, distribute it to users, and let
-> anyone verify or redeem its backing.
+> Launch a branded stablecoin backed 1:1 by USDC.e, distribute it on HSK Chain, and let holders verify the reserve or redeem their tokens.
 
-Status: **Phase 1 product definition**. No product contracts or live deployment exist yet.
-
-[Hackathon submission](https://luma.com/t6gj441t) closes **2026-08-27 at 14:00 WAT**. The
-official event format is a three-minute showcase followed by two minutes of Q&A.
-
-The proposed product lets an issuer deposit HSK mainnet USDC.e into an isolated reserve vault,
-mint the same quantity of a branded stablecoin, configure operational access, distribute funded
-tokens, and offer 1:1 redemption. A public proof page will expose supply, reserve, policy,
-roles, status and HSK Blockscout evidence.
+**HSK Stablecoins track:** ReserveRail turns HSK Chain into an issuer rail for the complete stablecoin lifecycle—not only token creation.
 
 ```text
-Deposit USDC.e → Mint → Distribute → Redeem
+Deposit USDC.e → Mint the same amount → Distribute → Redeem 1:1
 ```
 
-## Start Here
+ReserveRail is an unaudited, low-value hackathon pilot. The product and contract lifecycle are implemented, but the checked mainnet manifest is still marked **undeployed**. The interface never substitutes fabricated balances, addresses, or transaction receipts while deployment evidence is unavailable.
 
-- [Product specification](./.thoughts/specs/2026-08-27-hsk-stablecoin-issuer-studio.md)
-- [Phase 1 decisions](./docs/phase-1-decisions.md)
-- [User stories](./.thoughts/stories/2026-08-27-hsk-stablecoin-issuer-studio.md)
-- [Product surface map](./.thoughts/design/2026-08-27-product-surface-map.md)
-- [Interaction wireframe](./docs/interaction-wireframe.md)
-- [Threat model](./docs/threat-model.md)
-- [HSK Chain and USDC.e preflight](./docs/hsk-mainnet-preflight.md)
-- [Stablecoins track requirement matrix](./docs/hackathon-requirements.md)
-- [Build plan](./.thoughts/plans/2026-08-26-hsk-stablecoin-issuer-studio.md)
-- [Team workflow](./docs/team-workflow.md)
-- [GitHub backlog](./docs/github-backlog.md)
-- [Research context](./context/README.md)
+## Run It in 30 Seconds
 
-## Development
-
-Prerequisites:
-
-- Node.js 22.12 or newer
-- pnpm 10.33.1
-- Foundry 1.7 or newer
+Prerequisites: Node.js 22.12+, pnpm 10.33.1, Foundry 1.7+, and MetaMask.
 
 ```bash
 pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-The local web shell starts without secrets. It truthfully reports that no live pilot exists
-until a reviewed HSK address manifest is committed.
+Open the local URL printed by Vite, connect MetaMask, and use the built-in network switcher. No private key or application secret is required to inspect the product. Contract-writing actions remain disabled until reviewed deployment addresses are committed.
 
-Checked HSK network data lives in [`config/hsk-networks.json`](./config/hsk-networks.json).
-Deployment state remains explicitly `undeployed` in
-[`config/deployments/hsk-mainnet.json`](./config/deployments/hsk-mainnet.json) until a reviewed
-mainnet deployment PR supplies real addresses and provenance.
+## What Judges Can Inspect
 
-Implemented repository commands:
+- **Issuer path:** create a branded issuer pair, deposit reserve, and mint only against deposited backing.
+- **Holder path:** transfer tokens, request redemption, and inspect the resulting wallet transaction.
+- **Control path:** display operational roles and emergency controls without hiding privileged behavior.
+- **Proof path:** expose deployment status, reserve coverage, policy, contract addresses, and explorer evidence from one public route.
+- **Truthful failure states:** rejected wallet requests, wrong networks, missing roles, and undeployed contracts are shown as errors—not converted into fake success.
+
+## Why HSK Chain
+
+The application targets HSK Chain mainnet (chain ID `177`) and uses HSK as its gas token. Its configured reserve asset is the six-decimal bridged USDC (`USDC.e`) at [`0x054ed45810DbBAb8B27668922D110669c9D88D0a`](https://hashkey.blockscout.com/address/0x054ed45810DbBAb8B27668922D110669c9D88D0a). Testnet rehearsal uses HSK Chain testnet (chain ID `133`) before any low-value mainnet pilot.
+
+| Network | Chain ID | RPC | Explorer |
+| --- | ---: | --- | --- |
+| HSK Chain | `177` | `https://mainnet.hsk.xyz` | [Blockscout](https://hashkey.blockscout.com) |
+| HSK Chain Testnet | `133` | `https://testnet.hsk.xyz` | [Testnet explorer](https://testnet-explorer.hsk.xyz) |
+
+The checked network values and live-RPC preflight are documented in [HSK Chain and USDC.e preflight](./docs/hsk-mainnet-preflight.md). The mainnet application reads addresses only from the reviewed [deployment manifest](./config/deployments/hsk-mainnet.json).
+
+## Architecture
+
+```text
+Issuer / operator
+       │
+       ▼
+StablecoinFactory ──reads active version──▶ VersionRegistry
+       │
+       ├──creates──▶ IssuerStablecoin
+       └──creates──▶ ReserveVault ──holds──▶ USDC.e
+                              │
+                    deposit / mint / redeem
+                              │
+                              ▼
+                            Holder
+```
+
+Each issuer receives an isolated stablecoin and reserve vault. The factory discovers approved implementation versions through the registry. The vault enforces the central reserve rule: issued supply must not exceed backing, and redemption burns issuer tokens as reserve is returned. See [contract architecture](./docs/contract-architecture.md) and the [threat model](./docs/threat-model.md).
+
+## Verification
+
+Run the complete local quality gate:
+
+```bash
+pnpm verify
+```
+
+Or run individual checks:
 
 ```bash
 pnpm format:check
@@ -61,26 +75,35 @@ pnpm lint
 pnpm typecheck
 pnpm test
 pnpm build
-pnpm verify
 ```
 
-Pull requests run the same implemented gates in three required jobs:
-`web-lint-typecheck-test-build`, `contracts-format-build-test`, and
-`docs-links-and-secrets`. The last job scans full Git history for secrets and checks local
-Markdown links without depending on public websites.
+Pull requests must pass web lint/typecheck/test/build, Foundry formatting/build/tests, documentation links, and full-history secret scanning before the repository owner merges them into protected `main`.
 
-## Product Rules
+## Evidence and Project Documents
 
-- A token is not called stable merely because its name says USD.
-- MVP supply is minted only against USDC.e deposited in its vault.
-- Redemption is required in the judged product path.
-- Production screens never substitute a mock or fake success for a real integration.
-- The hosted live pilot must be understandable and inspectable within 30 seconds.
-- All changes reach protected `main` through issues, pull requests, review and CI.
+- [Stablecoins-track requirements and judging evidence](./docs/hackathon-requirements.md)
+- [HSK mainnet preflight](./docs/hsk-mainnet-preflight.md)
+- [HSK USDC.e fork proof](./docs/hsk-usdce-fork-proof.md)
+- [Contract architecture](./docs/contract-architecture.md)
+- [Threat model](./docs/threat-model.md)
+- [Interaction wireframe](./docs/interaction-wireframe.md)
+- [Product specification](./.thoughts/specs/2026-08-27-hsk-stablecoin-issuer-studio.md)
+- [Research context](./context/README.md)
+
+Verified deployment addresses, transaction receipts, hosted product URL, and demo video will be added only after those artifacts exist and have been reviewed.
+
+## Security and Limitations
+
+- ReserveRail is **unaudited** and is not presented as production-ready or endorsed by HashKey.
+- USDC.e is a bridged asset and carries bridge, issuer, custody, smart-contract, and depeg risk.
+- Administrative, reserve-operator, and pauser roles are privileged and must be protected.
+- Mainnet operation is intentionally limited to a small pilot after testnet rehearsal and review.
+- Optional allowlists and Merkle claims are not part of the required pilot path unless their implementations and evidence are shipped.
 
 ## Team
 
-ReserveRail is being built by a three-person hackathon team. Two collaborator invitations are
-pending. After the initial commit creates `main`, the repository owner will create the
-milestones and issues, activate the protected-main ruleset, and require reviewed pull requests
-before implementation begins.
+- [Alike001](https://github.com/Alike001) — repository owner and sole merger
+- [EcstaceeLOR](https://github.com/EcstaceeLOR) — contracts and deployment
+- [Webghost01-NG](https://github.com/Webghost01-NG) — product, testing, and demo
+
+All changes use an issue, a focused branch, a reviewed pull request, and passing CI before merge.
