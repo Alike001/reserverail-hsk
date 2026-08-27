@@ -385,7 +385,6 @@ contract VaultActor {
     }
 }
 
-
 contract MockReserve {
     uint8 private reserveDecimals = 6;
     uint16 private feeBps;
