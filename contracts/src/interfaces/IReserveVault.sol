@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.30;
+pragma solidity 0.8.30;
 
 interface IReserveVault {
     event Initialized(
@@ -29,11 +29,11 @@ interface IReserveVault {
     event RoleRotated(bytes32 indexed role, address indexed previousAccount, address indexed newAccount);
 
     function initialize(
-        address reserveAsset,
-        address issuerToken,
-        address administrator,
-        address reserveOperator,
-        address pauser
+        address reserveAsset_,
+        address issuerToken_,
+        address administrator_,
+        address reserveOperator_,
+        address pauser_
     ) external;
 
     function depositAndMint(uint256 reserveAmount, address recipient) external;

@@ -15,6 +15,41 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  contracts-static-analysis:
+    name: contracts-static-analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Run pinned Slither analysis
+        uses: crytic/slither-action@b52cc1cbfee9ca3e8722dd5224299d16c9a6b80f # v0.4.2
+        with:
+          target: contracts
+          solc-version: 0.8.30
+          slither-version: 0.11.6
+          slither-config: contracts/slither.config.json
+          slither-args: >-
+            --compile-force-framework foundry
+            --foundry-out-directory out
+            --foundry-deny never
+          sarif: contracts/reports/slither.sarif
+          fail-on: medium
+
+      - name: Upload Slither SARIF report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: slither-sarif
+          path: contracts/reports/slither.sarif
+          if-no-files-found: error
+          retention-days: 14
+
   web-lint-typecheck-test-build:
     name: web-lint-typecheck-test-build
     runs-on: ubuntu-latest

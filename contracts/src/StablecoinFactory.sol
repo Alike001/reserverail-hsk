@@ -38,6 +38,10 @@ contract StablecoinFactory is IStablecoinFactory {
         configuredReserveAsset = reserveAsset_;
     }
 
+    // Both initializer calls target fresh clones selected by the registry. creationLock is set
+    // before either call, so callbacks cannot enter another creation or observe a registered
+    // partial pair; all writes and the discovery event revert atomically on initializer failure.
+    // slither-disable-start reentrancy-no-eth,reentrancy-benign,reentrancy-events
     function createIssuer(
         string calldata name,
         string calldata symbol,
@@ -79,6 +83,7 @@ contract StablecoinFactory is IStablecoinFactory {
 
         creationLock = 0;
     }
+    // slither-disable-end reentrancy-no-eth,reentrancy-benign,reentrancy-events
 
     function currentVersion() public view returns (uint64) {
         return IVersionRegistry(versionRegistry).latestVersion();
