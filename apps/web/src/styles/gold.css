@@ -1,0 +1,760 @@
+/*
+ * ReserveRail visual polish
+ *
+ * This stylesheet is intentionally loaded after the existing visual layer.
+ * It contains presentation-only overrides and can be removed as one unit.
+ */
+
+:root {
+  --text: #f4f8f7;
+  --muted: #9aa9a5;
+  --surface: #0e1518;
+  --surface-raised: #141f22;
+  --border: rgb(173 214 201 / 14%);
+  --border-strong: rgb(173 214 201 / 24%);
+  --border-focus: #63e6b1;
+  --accent: #63e6b1;
+  --accent-strong: #37ca92;
+  --accent-glow: rgb(99 230 177 / 13%);
+  --canvas: #070b0d;
+  --canvas-soft: #0a1012;
+  --shadow-soft: 0 18px 60px rgb(0 0 0 / 24%);
+  --shadow-card: 0 14px 36px rgb(0 0 0 / 18%);
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-snap: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html {
+  color-scheme: dark;
+  scroll-behavior: smooth;
+}
+
+body {
+  color: var(--text);
+  background:
+    radial-gradient(
+      circle at 82% -8%,
+      rgb(64 211 154 / 15%),
+      transparent 34rem
+    ),
+    radial-gradient(circle at -5% 38%, rgb(70 121 143 / 8%), transparent 30rem),
+    linear-gradient(
+      180deg,
+      var(--canvas) 0%,
+      var(--canvas-soft) 52%,
+      var(--canvas) 100%
+    );
+}
+
+body::before {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  background-image:
+    linear-gradient(rgb(255 255 255 / 1.6%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 1.6%) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: linear-gradient(to bottom, black, transparent 70%);
+  content: "";
+  pointer-events: none;
+}
+
+::selection {
+  color: #07100c;
+  background: var(--accent);
+}
+
+h1,
+h2,
+h3,
+.brand-link,
+.step-title,
+.item-value,
+.metric-value,
+.card-value {
+  font-family:
+    "Avenir Next", "Segoe UI Variable Display", Inter, ui-sans-serif, system-ui,
+    sans-serif;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+.main-content,
+.header-container,
+.footer-container {
+  width: min(1180px, calc(100% - 48px));
+}
+
+.main-content {
+  padding-block: 52px 96px;
+}
+
+.site-header {
+  border-color: rgb(173 214 201 / 11%);
+  background: rgb(7 11 13 / 78%);
+  box-shadow: 0 8px 36px rgb(0 0 0 / 12%);
+  backdrop-filter: blur(20px) saturate(130%);
+}
+
+.header-container {
+  min-height: 80px;
+}
+
+.brand-link {
+  position: relative;
+  padding-left: 17px;
+  font-size: 19px;
+  letter-spacing: -0.035em;
+  transition:
+    color 240ms var(--ease-out),
+    transform 240ms var(--ease-out);
+}
+
+.brand-link::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 18px rgb(99 230 177 / 65%);
+  content: "";
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.brand-link:hover {
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.network-pill,
+.unaudited-badge,
+.wallet-network-ok,
+.manifest-status-pill,
+.pill-badge,
+.caller-badge,
+.emergency-status-badge {
+  letter-spacing: 0.035em;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 5%);
+}
+
+.network-pill {
+  border-color: rgb(173 214 201 / 17%);
+  color: #adbbb7;
+  background: rgb(20 31 34 / 78%);
+}
+
+.site-nav {
+  padding: 4px;
+  border: 1px solid rgb(173 214 201 / 10%);
+  border-radius: 12px;
+  background: rgb(255 255 255 / 2.5%);
+}
+
+.nav-item {
+  position: relative;
+  min-height: 38px;
+  border-radius: 9px;
+  transition:
+    color 240ms var(--ease-out),
+    border-color 240ms var(--ease-out),
+    background 240ms var(--ease-out),
+    transform 240ms var(--ease-out);
+}
+
+.nav-item:hover {
+  color: var(--text);
+  background: rgb(255 255 255 / 4%);
+  transform: translateY(-1px);
+}
+
+.nav-item.active {
+  border-color: rgb(99 230 177 / 17%);
+  color: #dcfff1;
+  background: linear-gradient(
+    180deg,
+    rgb(99 230 177 / 11%),
+    rgb(99 230 177 / 5%)
+  );
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 5%);
+}
+
+.wallet-button,
+.wallet-retry {
+  transition:
+    color 240ms var(--ease-out),
+    border-color 240ms var(--ease-out),
+    background 240ms var(--ease-out),
+    transform 240ms var(--ease-out);
+}
+
+.wallet-button {
+  min-height: 36px;
+  border-radius: var(--radius-sm);
+  background: rgb(20 31 34 / 84%);
+}
+
+.wallet-button:hover:not(:disabled),
+.wallet-retry:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  color: var(--accent);
+  background: rgb(99 230 177 / 7%);
+  transform: translateY(-1px);
+}
+
+:where(button, a, input, select):focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 5px rgb(99 230 177 / 10%);
+}
+
+.landing-view {
+  gap: 92px;
+}
+
+.hero-section {
+  position: relative;
+  padding: 44px 0 20px;
+}
+
+.hero-section::after {
+  position: absolute;
+  z-index: -1;
+  top: -6rem;
+  left: 50%;
+  width: 48rem;
+  height: 30rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(99 230 177 / 8%), transparent 68%);
+  content: "";
+  filter: blur(16px);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.hero-content {
+  max-width: 1060px;
+}
+
+.eyebrow,
+.flow-heading,
+.matrix-title {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 700;
+  letter-spacing: 0.115em;
+}
+
+.hero-title {
+  max-width: 1040px;
+  font-size: clamp(48px, 6vw, 78px);
+  font-weight: 760;
+  letter-spacing: -0.055em;
+  line-height: 0.99;
+  text-wrap: balance;
+  text-shadow: 0 10px 38px rgb(0 0 0 / 30%);
+}
+
+.hero-lede {
+  max-width: 720px;
+  margin-block: 30px 42px;
+  color: #a9b8b4;
+  font-size: clamp(17px, 1.6vw, 21px);
+  line-height: 1.62;
+}
+
+.flow-container {
+  margin-block: 42px 34px;
+}
+
+.four-step-flow,
+.features-grid,
+.manifest-grid,
+.manifest-details-grid,
+.skeleton-grid,
+.metrics-grid,
+.authorities-grid,
+.operation-matrix-grid {
+  gap: 18px;
+}
+
+.flow-step,
+.feature-card,
+.manifest-card,
+.manifest-item,
+.truth-commitment-box,
+.future-proof-container,
+.pilot-state-card,
+.contract-links-box,
+.transactions-box,
+.authority-card,
+.emergency-panel,
+.rotation-panel,
+.audit-panel,
+.detail-card,
+.skeleton-card,
+.metric-card,
+.matrix-item,
+.review-modal {
+  border-color: var(--border);
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 2.8%), transparent 48%),
+    var(--surface);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 3%);
+}
+
+.flow-step,
+.feature-card,
+.authority-card,
+.detail-card,
+.skeleton-card,
+.metric-card,
+.matrix-item {
+  transition:
+    border-color 320ms var(--ease-out),
+    box-shadow 320ms var(--ease-out),
+    transform 320ms var(--ease-out),
+    background 320ms var(--ease-out);
+}
+
+.flow-step:hover,
+.flow-step:focus-visible,
+.feature-card:hover,
+.authority-card:hover,
+.detail-card:hover,
+.metric-card:hover,
+.matrix-item:hover {
+  border-color: var(--border-strong);
+  background:
+    linear-gradient(145deg, rgb(99 230 177 / 6%), transparent 48%),
+    var(--surface);
+  box-shadow: var(--shadow-card);
+  transform: translateY(-4px);
+}
+
+.flow-step {
+  min-height: 132px;
+  padding: 20px;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+}
+
+.flow-step::before {
+  position: absolute;
+  top: 0;
+  left: 20px;
+  width: 40px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  content: "";
+}
+
+.step-badge {
+  border-color: rgb(99 230 177 / 22%);
+  background: var(--accent-glow);
+  box-shadow: 0 0 20px rgb(99 230 177 / 8%);
+}
+
+.step-desc {
+  font-size: 13px;
+  line-height: 1.48;
+}
+
+.btn {
+  border-radius: 12px;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 6%);
+  transition:
+    color 260ms var(--ease-out),
+    border-color 260ms var(--ease-out),
+    background 260ms var(--ease-out),
+    box-shadow 320ms var(--ease-out),
+    transform 320ms var(--ease-snap);
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  box-shadow: 0 12px 30px rgb(0 0 0 / 24%);
+  transform: translateY(-2px);
+}
+
+.btn:active:not(:disabled) {
+  box-shadow: none;
+  transform: translateY(0) scale(0.98);
+  transition-duration: 90ms;
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  filter: saturate(0.4);
+  opacity: 0.48;
+}
+
+.btn-primary:not(.btn-undeployed) {
+  color: #06110d;
+  background: linear-gradient(135deg, #bdf8dd, var(--accent));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 55%),
+    0 12px 32px rgb(55 202 146 / 13%);
+}
+
+.btn-secondary {
+  border-color: var(--border);
+  background: rgb(20 31 34 / 72%);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  color: var(--accent);
+  background: rgb(99 230 177 / 7%);
+}
+
+.section-title {
+  margin-bottom: 30px;
+  font-size: clamp(26px, 3vw, 36px);
+  letter-spacing: -0.035em;
+}
+
+.feature-card {
+  min-height: 228px;
+  padding: 30px;
+  border-radius: var(--radius-lg);
+}
+
+.feature-icon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  margin-bottom: 24px;
+  place-items: center;
+  border: 1px solid rgb(99 230 177 / 16%);
+  border-radius: 14px;
+  background: var(--accent-glow);
+  font-size: 21px;
+}
+
+.feature-card h3 {
+  font-size: 19px;
+  letter-spacing: -0.02em;
+}
+
+.feature-card p {
+  margin-top: 12px;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.manifest-card,
+.truth-commitment-box,
+.future-proof-container,
+.pilot-state-card,
+.contract-links-box,
+.transactions-box,
+.emergency-panel,
+.rotation-panel,
+.audit-panel {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+}
+
+.manifest-card {
+  padding: clamp(24px, 4vw, 38px);
+}
+
+.manifest-item,
+.detail-card,
+.skeleton-card,
+.metric-card,
+.matrix-item,
+.audit-item {
+  border-radius: var(--radius-sm);
+  background: rgb(20 31 34 / 72%);
+}
+
+.manifest-item {
+  min-height: 78px;
+  justify-content: center;
+  padding: 15px 18px;
+}
+
+.item-label,
+.card-label,
+.skeleton-label,
+.metric-label {
+  letter-spacing: 0.025em;
+}
+
+.site-footer {
+  border-color: rgb(173 214 201 / 10%);
+  background: rgb(7 11 13 / 74%);
+}
+
+.pilot-route-view,
+.pilot-undeployed-state,
+.pilot-deployed-state,
+.controls-view {
+  gap: 34px;
+}
+
+.pilot-title-row h1,
+.controls-header h1 {
+  font-size: clamp(34px, 4vw, 48px);
+  letter-spacing: -0.045em;
+}
+
+.state-banner {
+  padding: 26px;
+  border-radius: var(--radius-lg);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 5%);
+}
+
+.truth-commitment-box,
+.future-proof-container,
+.pilot-state-card,
+.contract-links-box,
+.transactions-box,
+.emergency-panel,
+.rotation-panel,
+.audit-panel {
+  padding: clamp(22px, 3vw, 30px);
+}
+
+.authority-card {
+  min-height: 168px;
+  padding: 24px;
+  border-radius: var(--radius-md);
+}
+
+.form-select,
+.form-input {
+  min-height: 48px;
+  border-color: var(--border);
+  border-radius: var(--radius-sm);
+  background: rgb(20 31 34 / 82%);
+  transition:
+    border-color 260ms var(--ease-out),
+    box-shadow 260ms var(--ease-out),
+    background 260ms var(--ease-out);
+}
+
+.form-select:hover,
+.form-input:hover {
+  border-color: var(--border-strong);
+}
+
+.form-select:focus,
+.form-input:focus {
+  border-color: var(--accent);
+  background: var(--surface-raised);
+  box-shadow: 0 0 0 4px rgb(99 230 177 / 10%);
+}
+
+.review-modal-backdrop {
+  background: rgb(0 0 0 / 74%);
+  backdrop-filter: blur(12px);
+}
+
+.review-modal {
+  border-color: var(--border-strong);
+  box-shadow: 0 28px 90px rgb(0 0 0 / 58%);
+}
+
+@keyframes reserve-rail-enter {
+  from {
+    opacity: 0;
+    filter: blur(5px);
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+.hero-section .eyebrow,
+.hero-title,
+.hero-lede,
+.flow-container,
+.hero-actions,
+.action-subtext,
+.features-section,
+.manifest-card,
+.pilot-header,
+.pilot-undeployed-state,
+.pilot-deployed-state,
+.controls-header,
+.controls-view > section,
+.controls-view > .pilot-state-card {
+  animation: reserve-rail-enter 680ms var(--ease-out) both;
+}
+
+.hero-title,
+.pilot-undeployed-state,
+.pilot-deployed-state,
+.controls-view > section,
+.controls-view > .pilot-state-card {
+  animation-delay: 70ms;
+}
+
+.hero-lede,
+.features-section {
+  animation-delay: 140ms;
+}
+
+.flow-container,
+.manifest-card {
+  animation-delay: 210ms;
+}
+
+.hero-actions {
+  animation-delay: 280ms;
+}
+
+.action-subtext {
+  animation-delay: 340ms;
+}
+
+@media (max-width: 980px) {
+  .main-content,
+  .header-container,
+  .footer-container {
+    width: min(100% - 40px, 780px);
+  }
+
+  .header-container {
+    padding-block: 12px;
+  }
+
+  .header-meta {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .site-nav {
+    margin-left: auto;
+  }
+
+  .hero-title {
+    font-size: clamp(46px, 7.4vw, 66px);
+  }
+}
+
+@media (max-width: 640px) {
+  .main-content,
+  .header-container,
+  .footer-container {
+    width: calc(100% - 32px);
+  }
+
+  .main-content {
+    padding-block: 34px 72px;
+  }
+
+  .site-header {
+    position: relative;
+  }
+
+  .header-container {
+    gap: 12px;
+    padding-block: 14px;
+  }
+
+  .header-meta {
+    padding-top: 2px;
+    border-top: 1px solid rgb(173 214 201 / 10%);
+  }
+
+  .site-nav {
+    margin-left: 0;
+  }
+
+  .nav-item {
+    min-height: 44px;
+    font-size: 12px;
+  }
+
+  .brand-link {
+    font-size: 18px;
+  }
+
+  .landing-view {
+    gap: 72px;
+  }
+
+  .hero-section {
+    padding-top: 22px;
+  }
+
+  .hero-title {
+    font-size: clamp(38px, 12vw, 48px);
+    line-height: 1.02;
+  }
+
+  .hero-lede {
+    margin-block: 24px 34px;
+    font-size: 17px;
+  }
+
+  .flow-container {
+    margin-block: 34px 28px;
+  }
+
+  .flow-step,
+  .feature-card {
+    min-height: auto;
+  }
+
+  .feature-card {
+    padding: 24px;
+  }
+
+  .manifest-header,
+  .pilot-title-row,
+  .review-modal-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .manifest-status-pill,
+  .emergency-status-badge {
+    align-self: flex-start;
+  }
+
+  .state-banner {
+    padding: 22px;
+  }
+
+  .wallet-actions {
+    gap: 8px;
+  }
+
+  .wallet-button {
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
