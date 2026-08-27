@@ -64,6 +64,11 @@ pnpm build
 pnpm verify
 ```
 
+Pull requests run the same implemented gates in three required jobs:
+`web-lint-typecheck-test-build`, `contracts-format-build-test`, and
+`docs-links-and-secrets`. The last job scans full Git history for secrets and checks local
+Markdown links without depending on public websites.
+
 ## Product Rules
 
 - A token is not called stable merely because its name says USD.

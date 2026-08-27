@@ -11,8 +11,8 @@ Date: **2026-08-27**
 - Prettier `3.9.6` for web formatting.
 - Foundry `1.7.1` with pinned Solidity `0.8.30` for contracts.
 - Static/read-only web architecture; no backend, database, indexer, or private startup secret.
-- HSK JSON-RPC and Blockscout integration is planned behind a checked manifest in P2-05.
-- GitHub Actions are not implemented until P2-04.
+- HSK JSON-RPC, Blockscout, USDC.e, and deployment state are read from checked manifests.
+- Pull requests run three required GitHub Actions jobs with read-only permissions.
 
 ## Existing Commands
 
@@ -55,16 +55,16 @@ For documentation/configuration:
 
 ## Required CI Gates
 
-Target required check names for the `main` ruleset:
+Implemented required check names for the `main` ruleset:
 
 - `contracts-format-build-test`
-- `contracts-invariants`
-- `contracts-static-analysis`
 - `web-lint-typecheck-test-build`
 - `docs-links-and-secrets`
 
-After an end-to-end environment exists, add:
+Add these only after they perform real work and pass on a pull request:
 
+- `contracts-invariants`
+- `contracts-static-analysis`
 - `hsk-testnet-e2e`
 
 Do not make a flaky public-RPC test a blocking check until retries, timeouts and deterministic
@@ -118,5 +118,6 @@ When the implementation repository is scaffolded, repository instructions should
 - Vite/React/TypeScript and pnpm are selected for the submission.
 - Will the static web app require an indexer, or can RPC/event reads satisfy the MVP?
   Recommendation: no mandatory backend for the read-only and core transaction path.
-- Which Slither and dependency-scanning versions will CI pin?
+- Which Slither and dependency-scanning versions should be pinned when financial contracts
+  exist?
 - Which HSK testnet funding mechanism is reliable enough for deterministic E2E tests?
