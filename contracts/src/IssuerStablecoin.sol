@@ -3,6 +3,7 @@ pragma solidity 0.8.30;
 
 contract IssuerStablecoin {
     uint8 public constant decimals = 6;
+    bytes32 public constant ADMINISTRATOR_ROLE = keccak256("ADMINISTRATOR_ROLE");
 
     string public name;
     string public symbol;
@@ -11,6 +12,7 @@ contract IssuerStablecoin {
     address public administrator;
     address public vault;
     bool public initialized;
+    bool public paused;
 
     mapping(address account => uint256 balance) public balanceOf;
     mapping(address owner => mapping(address spender => uint256 amount)) public allowance;
@@ -22,12 +24,21 @@ contract IssuerStablecoin {
     error InsufficientBalance();
     error InsufficientAllowance();
     error InvalidMetadata();
+    error OperationallyPaused();
+    error AlreadyPaused();
+    error NotPaused();
+    error UnauthorizedAdministrator();
+    error InvalidRole();
+    error RoleUnchanged();
 
     event Approval(address indexed owner, address indexed spender, uint256 value);
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Initialized(
         string name, string symbol, address indexed factory, address indexed administrator, address indexed vault
     );
+    event Paused(address indexed account);
+    event Unpaused(address indexed account);
+    event RoleRotated(bytes32 indexed role, address indexed previousAccount, address indexed newAccount);
 
     constructor() {
         // Production instances are minimal proxies. Locking the implementation prevents it from
@@ -77,6 +88,7 @@ contract IssuerStablecoin {
 
     function mint(address to, uint256 amount) external {
         _onlyVault();
+        if (paused) revert OperationallyPaused();
         if (to == address(0)) revert ZeroAddress();
         if (amount == 0) revert ZeroAmount();
 
@@ -96,11 +108,37 @@ contract IssuerStablecoin {
         emit Transfer(from, address(0), amount);
     }
 
+    function setOperationalPause(bool paused_) external {
+        _onlyVault();
+        if (paused_) {
+            if (paused) revert AlreadyPaused();
+            paused = true;
+            emit Paused(msg.sender);
+            return;
+        }
+
+        if (!paused) revert NotPaused();
+        paused = false;
+        emit Unpaused(msg.sender);
+    }
+
+    function rotateRole(bytes32 role, address newAccount) external {
+        if (msg.sender != administrator) revert UnauthorizedAdministrator();
+        if (role != ADMINISTRATOR_ROLE) revert InvalidRole();
+        if (newAccount == address(0)) revert ZeroAddress();
+
+        address previousAccount = administrator;
+        if (newAccount == previousAccount) revert RoleUnchanged();
+        administrator = newAccount;
+        emit RoleRotated(role, previousAccount, newAccount);
+    }
+
     function _onlyVault() internal view {
         if (msg.sender != vault) revert UnauthorizedVault();
     }
 
     function _transfer(address from, address to, uint256 amount) internal {
+        if (paused) revert OperationallyPaused();
         if (from == address(0) || to == address(0)) revert ZeroAddress();
         if (balanceOf[from] < amount) revert InsufficientBalance();
 

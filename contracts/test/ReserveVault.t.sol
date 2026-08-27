@@ -184,24 +184,163 @@ contract ReserveVaultTest {
         require(vault.reserveBalance() == 500_000, "redemption reserve mismatch");
     }
 
-    function test_RedemptionRemainsAvailableWhenOperationalStateIsPaused() public {
+    function test_CoordinatedPauseBlocksMintAndTransfersButPreservesRedemption() public {
         MockReserve reserve = new MockReserve();
         ReserveVaultTestPairFactory pairFactory = new ReserveVaultTestPairFactory();
-        (IssuerStablecoin token, ReserveVaultPauseHarness vault) =
-            pairFactory.createPairWithPauseHarness(reserve, ADMINISTRATOR, address(this), PAUSER);
+        VaultActor administrator = new VaultActor();
+        VaultActor operator = new VaultActor();
+        VaultActor pauser = new VaultActor();
         VaultActor holder = new VaultActor();
-        reserve.mint(address(this), 1_000_000);
-        reserve.approve(address(vault), 1_000_000);
-        vault.depositAndMint(1_000_000, address(holder));
+        VaultActor spender = new VaultActor();
+        (IssuerStablecoin token, ReserveVault vault) =
+            pairFactory.createPair(reserve, address(administrator), address(operator), address(pauser));
+        reserve.mint(address(operator), 2_000_000);
+        operator.approveReserve(reserve, address(vault), 2_000_000);
+        operator.deposit(vault, 1_000_000, address(holder));
+        holder.approveToken(token, address(spender), 100_000);
 
-        vault.setOperationalPauseForTest(true);
-        (bool depositSucceeded,) = address(vault).call(abi.encodeCall(vault.depositAndMint, (1, address(holder))));
-        require(!depositSucceeded, "paused deposit succeeded");
+        pauser.pause(vault);
+        require(vault.operationallyPaused(), "vault did not pause");
+        require(token.paused(), "token did not pause");
 
-        holder.redeem(vault, 1_000_000, RECIPIENT);
-        require(token.totalSupply() == 0, "paused redemption did not burn");
-        require(vault.reserveBalance() == 0, "paused redemption did not pay");
-        require(reserve.balanceOf(RECIPIENT) == 1_000_000, "paused redemption recipient mismatch");
+        require(!operator.tryDeposit(vault, 1_000_000, address(holder)), "paused deposit succeeded");
+        require(!holder.tryTransferToken(token, RECIPIENT, 1), "paused transfer succeeded");
+        require(!holder.tryTransferToken(token, RECIPIENT, 0), "paused zero transfer succeeded");
+        require(
+            !spender.tryTransferFromToken(token, address(holder), RECIPIENT, 100_000), "paused transferFrom succeeded"
+        );
+        require(token.totalSupply() == 1_000_000, "paused operation changed supply");
+        require(vault.reserveBalance() == 1_000_000, "paused operation changed reserve");
+        require(token.allowance(address(holder), address(spender)) == 100_000, "failed transfer changed allowance");
+
+        holder.approveToken(token, address(spender), 200_000);
+        require(token.allowance(address(holder), address(spender)) == 200_000, "pause blocked approval");
+
+        holder.redeem(vault, 250_000, RECIPIENT);
+        require(token.totalSupply() == 750_000, "paused redemption did not burn");
+        require(vault.reserveBalance() == 750_000, "paused redemption did not pay");
+        require(reserve.balanceOf(RECIPIENT) == 250_000, "paused redemption recipient mismatch");
+        require(vault.operationallyPaused() && token.paused(), "redemption changed pause state");
+
+        require(!pauser.tryUnpause(vault), "pauser unpaused vault");
+        administrator.unpause(vault);
+        require(!vault.operationallyPaused() && !token.paused(), "pair did not unpause");
+        require(holder.tryTransferToken(token, RECIPIENT, 1), "transfer failed after unpause");
+    }
+
+    function test_PauseAuthorizationTransitionsEventsAndPairIsolation() public {
+        MockReserve reserve = new MockReserve();
+        ReserveVaultTestPairFactory pairFactory = new ReserveVaultTestPairFactory();
+        VaultActor administrator = new VaultActor();
+        VaultActor pauser = new VaultActor();
+        VaultActor arbitrary = new VaultActor();
+        (IssuerStablecoin token, ReserveVault vault) =
+            pairFactory.createPair(reserve, address(administrator), address(this), address(pauser));
+        (IssuerStablecoin otherToken, ReserveVault otherVault) =
+            pairFactory.createPair(reserve, address(administrator), address(this), address(pauser));
+
+        require(!arbitrary.tryPause(vault), "arbitrary caller paused vault");
+        require(!arbitrary.trySetOperationalPause(token, true), "direct token pause succeeded");
+
+        VM.recordLogs();
+        pauser.pause(vault);
+        Vm.Log[] memory pauseLogs = VM.getRecordedLogs();
+        Vm.Log memory tokenPause = _findLog(pauseLogs, address(token), keccak256("Paused(address)"));
+        Vm.Log memory vaultPause = _findLog(pauseLogs, address(vault), keccak256("Paused(address)"));
+        require(_topicAddress(tokenPause.topics[1]) == address(vault), "wrong token pause actor");
+        require(_topicAddress(vaultPause.topics[1]) == address(pauser), "wrong vault pause actor");
+        require(!otherVault.operationallyPaused() && !otherToken.paused(), "other pair paused");
+
+        require(!pauser.tryPause(vault), "repeat pause succeeded");
+        require(!pauser.tryUnpause(vault), "pauser unpaused vault");
+
+        VM.recordLogs();
+        administrator.unpause(vault);
+        Vm.Log[] memory unpauseLogs = VM.getRecordedLogs();
+        Vm.Log memory tokenUnpause = _findLog(unpauseLogs, address(token), keccak256("Unpaused(address)"));
+        Vm.Log memory vaultUnpause = _findLog(unpauseLogs, address(vault), keccak256("Unpaused(address)"));
+        require(_topicAddress(tokenUnpause.topics[1]) == address(vault), "wrong token unpause actor");
+        require(_topicAddress(vaultUnpause.topics[1]) == address(administrator), "wrong vault unpause actor");
+        require(!administrator.tryUnpause(vault), "unpause while active succeeded");
+
+        administrator.pause(vault);
+        administrator.unpause(vault);
+    }
+
+    function test_RoleRotationWorksDuringPauseAndRevokesPreviousRoles() public {
+        MockReserve reserve = new MockReserve();
+        ReserveVaultTestPairFactory pairFactory = new ReserveVaultTestPairFactory();
+        VaultActor administrator = new VaultActor();
+        VaultActor operator = new VaultActor();
+        VaultActor pauser = new VaultActor();
+        VaultActor nextAdministrator = new VaultActor();
+        VaultActor nextOperator = new VaultActor();
+        VaultActor nextPauser = new VaultActor();
+        (IssuerStablecoin token, ReserveVault vault) =
+            pairFactory.createPair(reserve, address(administrator), address(operator), address(pauser));
+
+        pauser.pause(vault);
+        require(
+            !operator.tryRotateVaultRole(vault, vault.PAUSER_ROLE(), address(nextPauser)),
+            "non-admin rotated vault role"
+        );
+        require(
+            !operator.tryRotateTokenRole(token, token.ADMINISTRATOR_ROLE(), address(nextAdministrator)),
+            "non-admin rotated token role"
+        );
+        require(
+            !administrator.tryRotateVaultRole(vault, bytes32(uint256(123)), address(nextPauser)), "unknown role rotated"
+        );
+        require(!administrator.tryRotateVaultRole(vault, vault.PAUSER_ROLE(), address(0)), "zero role account accepted");
+        require(
+            !administrator.tryRotateVaultRole(vault, vault.PAUSER_ROLE(), address(pauser)), "same role account accepted"
+        );
+
+        administrator.rotateVaultRole(vault, vault.PAUSER_ROLE(), address(nextPauser));
+        administrator.rotateVaultRole(vault, vault.RESERVE_OPERATOR_ROLE(), address(nextOperator));
+        administrator.rotateTokenRole(token, token.ADMINISTRATOR_ROLE(), address(nextAdministrator));
+        administrator.rotateVaultRole(vault, vault.ADMINISTRATOR_ROLE(), address(nextAdministrator));
+
+        require(vault.pauser() == address(nextPauser), "pauser not rotated");
+        require(vault.reserveOperator() == address(nextOperator), "operator not rotated");
+        require(vault.administrator() == address(nextAdministrator), "vault admin not rotated");
+        require(token.administrator() == address(nextAdministrator), "token admin not rotated");
+        require(!administrator.tryUnpause(vault), "previous admin retained vault authority");
+        require(
+            !administrator.tryRotateTokenRole(token, token.ADMINISTRATOR_ROLE(), address(administrator)),
+            "previous admin retained token authority"
+        );
+        nextAdministrator.unpause(vault);
+        require(!pauser.tryPause(vault), "previous pauser retained authority");
+        nextPauser.pause(vault);
+
+        reserve.mint(address(operator), 1);
+        operator.approveReserve(reserve, address(vault), 1);
+        require(!operator.tryDeposit(vault, 1, RECIPIENT), "previous operator retained authority");
+        nextAdministrator.unpause(vault);
+        reserve.mint(address(nextOperator), 1);
+        nextOperator.approveReserve(reserve, address(vault), 1);
+        nextOperator.deposit(vault, 1, RECIPIENT);
+        require(token.balanceOf(RECIPIENT) == 1, "replacement operator could not mint");
+    }
+
+    function test_FailedTokenPauseUpdateRollsBackVaultState() public {
+        MockReserve reserve = new MockReserve();
+        ReserveVaultTestPairFactory pairFactory = new ReserveVaultTestPairFactory();
+        VaultActor administrator = new VaultActor();
+        VaultActor pauser = new VaultActor();
+        (RejectingPauseToken token, ReserveVault vault) =
+            pairFactory.createPairWithRejectingToken(reserve, address(administrator), address(this), address(pauser));
+
+        token.setRejectPauseUpdate(true);
+        require(!pauser.tryPause(vault), "pause succeeded despite token failure");
+        require(!vault.operationallyPaused() && !token.paused(), "failed pause left partial state");
+
+        token.setRejectPauseUpdate(false);
+        pauser.pause(vault);
+        token.setRejectPauseUpdate(true);
+        require(!administrator.tryUnpause(vault), "unpause succeeded despite token failure");
+        require(vault.operationallyPaused() && token.paused(), "failed unpause left partial state");
     }
 
     function test_RejectsUnsupportedReserveMismatchedPairAndReinitialization() public {
@@ -281,18 +420,15 @@ contract ReserveVaultTestPairFactory {
         vault.initialize(address(reserve), address(token), administrator, operator, pauser);
     }
 
-    function createPairWithPauseHarness(MockReserve reserve, address administrator, address operator, address pauser)
+    function createPairWithRejectingToken(MockReserve reserve, address administrator, address operator, address pauser)
         external
-        returns (IssuerStablecoin token, ReserveVaultPauseHarness vault)
+        returns (RejectingPauseToken token, ReserveVault vault)
     {
-        IssuerStablecoin tokenImplementation = new IssuerStablecoin();
-        ReserveVaultPauseHarness vaultImplementation = new ReserveVaultPauseHarness();
-        ReserveVaultTestProxy tokenProxy = new ReserveVaultTestProxy(address(tokenImplementation));
+        ReserveVault vaultImplementation = new ReserveVault();
         ReserveVaultTestProxy vaultProxy = new ReserveVaultTestProxy(address(vaultImplementation));
-        token = IssuerStablecoin(address(tokenProxy));
-        vault = ReserveVaultPauseHarness(address(vaultProxy));
+        vault = ReserveVault(address(vaultProxy));
+        token = new RejectingPauseToken(address(this), address(vault), administrator);
 
-        token.initialize("Rail USD", "rUSD", administrator, address(vault));
         vault.initialize(address(reserve), address(token), administrator, operator, pauser);
     }
 
@@ -328,13 +464,6 @@ contract ReserveVaultTestPairFactory {
                 )
             );
         return succeeded;
-    }
-}
-
-/// @dev Test-only pause setter used to prove that redemption has no ordinary-pause guard.
-contract ReserveVaultPauseHarness is ReserveVault {
-    function setOperationalPauseForTest(bool paused_) external {
-        operationallyPaused = paused_;
     }
 }
 
@@ -382,6 +511,94 @@ contract VaultActor {
     function tryRedeem(ReserveVault vault, uint256 amount, address recipient) external returns (bool) {
         (bool succeeded,) = address(vault).call(abi.encodeCall(vault.redeem, (amount, recipient)));
         return succeeded;
+    }
+
+    function approveToken(IssuerStablecoin token, address spender, uint256 amount) external {
+        require(token.approve(spender, amount), "token approval failed");
+    }
+
+    function tryTransferToken(IssuerStablecoin token, address recipient, uint256 amount) external returns (bool) {
+        (bool succeeded,) = address(token).call(abi.encodeCall(token.transfer, (recipient, amount)));
+        return succeeded;
+    }
+
+    function tryTransferFromToken(IssuerStablecoin token, address holder, address recipient, uint256 amount)
+        external
+        returns (bool)
+    {
+        (bool succeeded,) = address(token).call(abi.encodeCall(token.transferFrom, (holder, recipient, amount)));
+        return succeeded;
+    }
+
+    function pause(ReserveVault vault) external {
+        vault.pause();
+    }
+
+    function tryPause(ReserveVault vault) external returns (bool) {
+        (bool succeeded,) = address(vault).call(abi.encodeCall(vault.pause, ()));
+        return succeeded;
+    }
+
+    function unpause(ReserveVault vault) external {
+        vault.unpause();
+    }
+
+    function tryUnpause(ReserveVault vault) external returns (bool) {
+        (bool succeeded,) = address(vault).call(abi.encodeCall(vault.unpause, ()));
+        return succeeded;
+    }
+
+    function trySetOperationalPause(IssuerStablecoin token, bool paused_) external returns (bool) {
+        (bool succeeded,) = address(token).call(abi.encodeCall(token.setOperationalPause, (paused_)));
+        return succeeded;
+    }
+
+    function rotateVaultRole(ReserveVault vault, bytes32 role, address newAccount) external {
+        vault.rotateRole(role, newAccount);
+    }
+
+    function tryRotateVaultRole(ReserveVault vault, bytes32 role, address newAccount) external returns (bool) {
+        (bool succeeded,) = address(vault).call(abi.encodeCall(vault.rotateRole, (role, newAccount)));
+        return succeeded;
+    }
+
+    function rotateTokenRole(IssuerStablecoin token, bytes32 role, address newAccount) external {
+        token.rotateRole(role, newAccount);
+    }
+
+    function tryRotateTokenRole(IssuerStablecoin token, bytes32 role, address newAccount) external returns (bool) {
+        (bool succeeded,) = address(token).call(abi.encodeCall(token.rotateRole, (role, newAccount)));
+        return succeeded;
+    }
+}
+
+/// @dev Test double that satisfies pair validation but rejects configured pause updates.
+contract RejectingPauseToken {
+    uint8 public constant decimals = 6;
+    address public immutable factory;
+    address public immutable vault;
+    address public immutable administrator;
+    bool public paused;
+    bool private rejectPauseUpdate;
+
+    constructor(address factory_, address vault_, address administrator_) {
+        factory = factory_;
+        vault = vault_;
+        administrator = administrator_;
+    }
+
+    function setRejectPauseUpdate(bool reject_) external {
+        rejectPauseUpdate = reject_;
+    }
+
+    function setOperationalPause(bool paused_) external {
+        require(msg.sender == vault, "unauthorized vault");
+        require(!rejectPauseUpdate, "pause update rejected");
+        paused = paused_;
+    }
+
+    function totalSupply() external pure returns (uint256) {
+        return 0;
     }
 }
 
