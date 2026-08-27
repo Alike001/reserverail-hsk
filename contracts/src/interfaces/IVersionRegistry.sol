@@ -8,18 +8,10 @@ interface IVersionRegistry {
         bool active;
     }
 
-    event VersionRegistered(
-        uint64 indexed version,
-        address indexed tokenImplementation,
-        address indexed vaultImplementation
-    );
+    event VersionRegistered(uint64 indexed version, address indexed tokenImplementation, address indexed vaultImplementation);
     event VersionStatusUpdated(uint64 indexed version, bool active);
 
-    function registerVersion(
-        uint64 version,
-        address tokenImplementation,
-        address vaultImplementation
-    ) external;
+    function registerVersion(uint64 version, address tokenImplementation, address vaultImplementation) external;
 
     function setVersionActive(uint64 version, bool active) external;
     function getVersion(uint64 version) external view returns (Version memory);

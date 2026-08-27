@@ -4,13 +4,7 @@ pragma solidity >=0.8.30;
 interface IIssuerStablecoin {
     event Approval(address indexed owner, address indexed spender, uint256 value);
     event Transfer(address indexed from, address indexed to, uint256 value);
-    event Initialized(
-        string name,
-        string symbol,
-        address indexed administrator,
-        address indexed vault,
-        address indexed pauser
-    );
+    event Initialized(string name, string symbol, address indexed administrator, address indexed vault, address indexed pauser);
     event TransferPolicyUpdated(address indexed previousPolicy, address indexed newPolicy);
     event Paused(address indexed account);
     event Unpaused(address indexed account);
