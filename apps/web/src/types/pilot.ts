@@ -1,6 +1,6 @@
 import type { Address } from "../config/hsk";
 
-export type RouteState = "landing" | "pilot";
+export type RouteState = "landing" | "pilot" | "controls";
 
 export interface ProofTransaction {
   hash: string;

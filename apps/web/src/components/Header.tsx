@@ -68,6 +68,14 @@ export function Header({ currentRoute, onNavigate }: HeaderProps) {
               </span>
             )}
           </button>
+          <button
+            type="button"
+            className={`nav-item ${currentRoute === "controls" ? "active" : ""}`}
+            onClick={() => onNavigate("controls")}
+            aria-current={currentRoute === "controls" ? "page" : undefined}
+          >
+            Emergency & Roles
+          </button>
         </nav>
       </div>
     </header>
