@@ -6,7 +6,8 @@ Date: **2026-08-27**
 
 Use GitHub milestones for phases and small GitHub issues for work units. Teammates select ready,
 unassigned issues, work on separate branches, and open pull requests. Nobody pushes directly to
-`main`, including the repository owner during normal work.
+`main`, including the repository owner during normal work. Only repository owner `Alike001`
+performs the final squash merge for every pull request, including the owner's own pull requests.
 
 This is safer and faster than one issue per phase: a phase is too large for one owner, difficult
 to review, and likely to create merge conflicts.
@@ -19,7 +20,9 @@ Setup evidence as of **2026-08-27**:
 - Default branch: `main`
 - Active ruleset: [Protect main](https://github.com/Alike001/reserverail-hsk/rules/21609595)
 - Enforced: pull request, one approval, last-push approval, resolved conversations, linear
-  history, no deletion, and no force push.
+  history, restricted updates, no deletion, and no force push.
+- Merge authority: only the repository-admin role can update `main`, using a pull-request-only
+  bypass. Contributors can push feature branches and open/review pull requests but cannot merge.
 - Merge method: squash only; merged branches are deleted automatically.
 - Required CI status checks remain intentionally unset until real Phase 2 jobs run once.
 
@@ -155,6 +158,12 @@ Pull requests should:
 - Include transaction/explorer links only when they are real.
 - Call out changes to funds, roles, reserve accounting, policies, deployment or mainnet state.
 - Stay small; prefer several ordered PRs over one phase-sized PR.
+
+After checks and review, only `Alike001` presses **Squash and merge**. Contributors must not
+merge their own or another contributor's pull request even if GitHub displays a merge control.
+For an urgent owner-authored change, the owner may use the PR-only administrator bypass, but the
+pull request, passing available checks, self-review evidence, and bypass reason must remain in
+the audit trail.
 
 ## Review Policy
 

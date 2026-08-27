@@ -18,7 +18,11 @@ Read these before contributing:
 4. Run the checks relevant to the change.
 5. Open a pull request using the repository template and link the issue.
 6. Resolve review conversations and obtain approval from another teammate.
-7. Merge only after required checks pass.
+7. Wait for repository owner `Alike001` to perform the squash merge after required checks pass.
+
+Only `Alike001` merges pull requests into `main`, including owner-authored pull requests.
+Contributors may create branches, push commits, open pull requests, and review work; they do not
+press the merge button.
 
 Never push directly to `main`. Never place a mock, fake receipt, fabricated balance, hardcoded
 success response or simulated integration in a production route while presenting it as real.
