@@ -1,8 +1,0 @@
-[extend]
-useDefault = true
-
-[[allowlists]]
-description = "Public 20-byte EVM addresses in reviewed deployment manifests"
-paths = ['''config/deployments/.*\.json''']
-regexTarget = "secret"
-regexes = ['''0x[a-fA-F0-9]{40}''']

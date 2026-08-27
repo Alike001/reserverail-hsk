@@ -2,7 +2,8 @@
 
 Status: **deployed, independently reconciled, and source-verified on HSKChain Testnet**
 
-This runbook deploys the complete ReserveRail pilot lifecycle to HSKChain Testnet only. It uses
+This runbook records a ReserveRail deployment and reserve-backed mint rehearsal on HSKChain
+Testnet only. It uses
 the public deployer address `0xdE67A35B322e5A31e8215B5245CA4e48d7977F71`; no private key,
 seed phrase, password, or funded account is stored in the repository.
 
@@ -151,8 +152,8 @@ After all ten receipts succeed:
 
 1. Copy real addresses and transaction hashes from
    `contracts/broadcast/DeployHskTestnet.s.sol/133/run-latest.json`.
-2. Independently confirm every address has code using `cast code ADDRESS --rpc-url
-https://testnet.hsk.xyz`.
+2. Independently confirm every address has code using
+   `cast code ADDRESS --rpc-url https://testnet.hsk.xyz`.
 3. Compare registry, factory, token, vault, reserve, roles, supply, and reserve balance with direct
    `cast call` reads.
 4. Verify the five non-proxy source contracts using Foundry's Blockscout verifier, compiler
