@@ -1,0 +1,49 @@
+import { useCallback, useEffect, useState } from "react";
+import type { RouteState } from "../types/pilot";
+
+function getRouteFromLocation(): RouteState {
+  if (typeof window === "undefined") return "landing";
+  const hash = window.location.hash.toLowerCase();
+  const path = window.location.pathname.toLowerCase();
+  if (hash === "#pilot" || path === "/pilot") {
+    return "pilot";
+  }
+  return "landing";
+}
+
+export function useRoute(): {
+  route: RouteState;
+  navigate: (newRoute: RouteState) => void;
+} {
+  const [route, setRoute] = useState<RouteState>(getRouteFromLocation);
+
+  useEffect(() => {
+    const handleLocationChange = () => {
+      setRoute(getRouteFromLocation());
+    };
+
+    window.addEventListener("popstate", handleLocationChange);
+    window.addEventListener("hashchange", handleLocationChange);
+    return () => {
+      window.removeEventListener("popstate", handleLocationChange);
+      window.removeEventListener("hashchange", handleLocationChange);
+    };
+  }, []);
+
+  const navigate = useCallback((newRoute: RouteState) => {
+    setRoute(newRoute);
+    if (typeof window !== "undefined") {
+      const targetHash = newRoute === "pilot" ? "#pilot" : "#landing";
+      if (window.location.hash !== targetHash) {
+        window.history.pushState({}, "", targetHash);
+      }
+
+      const appRoot = document.getElementById("root");
+      if (typeof appRoot?.scrollIntoView === "function") {
+        appRoot.scrollIntoView({ block: "start" });
+      }
+    }
+  }, []);
+
+  return { route, navigate };
+}
