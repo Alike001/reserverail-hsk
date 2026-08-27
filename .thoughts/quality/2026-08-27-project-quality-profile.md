@@ -20,13 +20,13 @@ Date: **2026-08-27**
 - `pnpm format` / `pnpm format:check`: Prettier plus `forge fmt`.
 - `pnpm lint`: Oxlint web sources.
 - `pnpm typecheck`: TypeScript project build without emitting application output.
-- `pnpm test`: current Foundry scaffold tests.
+- `pnpm test`: Vitest configuration tests plus current Foundry tests.
 - `pnpm contracts:build`: compile Solidity.
 - `pnpm build`: typecheck and build web/contracts.
 - `pnpm verify`: run every implemented local gate.
 
-`test:invariant`, static security analysis, and web tests are intentionally absent until real
-contract and web behavior exists. A passing empty command would be a false quality gate.
+`test:invariant` and static security analysis are intentionally absent until real financial
+contracts exist. A passing empty command would be a false quality gate.
 
 ## Required Local Checks
 

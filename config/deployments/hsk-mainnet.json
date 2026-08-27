@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "status": "undeployed",
+  "chainId": 177,
+  "sourceCommit": null,
+  "factory": null,
+  "pilot": {
+    "token": null,
+    "vault": null
+  },
+  "updatedAt": null
+}

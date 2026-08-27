@@ -1,0 +1,30 @@
+{
+  "mainnet": {
+    "id": 177,
+    "name": "HSK Chain",
+    "nativeCurrency": {
+      "name": "HSK",
+      "symbol": "HSK",
+      "decimals": 18
+    },
+    "rpcUrl": "https://mainnet.hsk.xyz",
+    "explorerUrl": "https://hashkey.blockscout.com",
+    "usdcE": {
+      "address": "0x054ed45810DbBAb8B27668922D110669c9D88D0a",
+      "name": "Bridged USDC",
+      "symbol": "USDC.e",
+      "decimals": 6
+    }
+  },
+  "testnet": {
+    "id": 133,
+    "name": "HSK Chain Testnet",
+    "nativeCurrency": {
+      "name": "HSK",
+      "symbol": "HSK",
+      "decimals": 18
+    },
+    "rpcUrl": "https://testnet.hsk.xyz",
+    "explorerUrl": "https://testnet-explorer.hsk.xyz"
+  }
+}

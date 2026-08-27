@@ -48,6 +48,11 @@ pnpm dev
 The local web shell starts without secrets. It truthfully reports that no live pilot exists
 until a reviewed HSK address manifest is committed.
 
+Checked HSK network data lives in [`config/hsk-networks.json`](./config/hsk-networks.json).
+Deployment state remains explicitly `undeployed` in
+[`config/deployments/hsk-mainnet.json`](./config/deployments/hsk-mainnet.json) until a reviewed
+mainnet deployment PR supplies real addresses and provenance.
+
 Implemented repository commands:
 
 ```bash
