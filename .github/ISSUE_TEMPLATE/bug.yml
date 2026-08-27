@@ -1,0 +1,58 @@
+name: Bug report
+description: Report incorrect, unsafe, misleading, or broken behavior.
+title: "[Bug] "
+labels:
+  - type:bug
+body:
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed behavior
+      description: What happened, including network and relevant addresses without secrets.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+      placeholder: |
+        1. ...
+        2. ...
+    validations:
+      required: true
+  - type: dropdown
+    id: network
+    attributes:
+      label: Network
+      options:
+        - Local test only
+        - HSK testnet (133)
+        - HSK mainnet (177)
+        - Not network-specific
+    validations:
+      required: true
+  - type: checkboxes
+    id: impact
+    attributes:
+      label: Potential impact
+      options:
+        - label: Funds or reserve coverage
+        - label: Roles or permissions
+        - label: False success or misleading chain data
+        - label: Mainnet deployment
+        - label: Security-sensitive; details should move to private disclosure
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Logs, screenshots, transaction hashes, block numbers, or failing tests. Remove secrets.
+  - type: markdown
+    attributes:
+      value: |
+        Do not publish an exploitable vulnerability, private key, seed phrase, service secret, or sensitive recipient data. Contact the repository owner privately for security-sensitive details.

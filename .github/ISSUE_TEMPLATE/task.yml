@@ -1,0 +1,79 @@
+name: Build task
+description: Claim a scoped product, contract, web, test, documentation, or infrastructure task.
+title: "[P?-??] "
+labels:
+  - status:needs-decision
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Keep this issue independently reviewable. A phase belongs in a milestone; it should not be one giant issue.
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Outcome
+      description: Describe the observable result, not the implementation activity.
+      placeholder: A reviewer can...
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: In scope
+      description: List the behavior and artifacts included.
+      placeholder: |
+        - ...
+        - ...
+    validations:
+      required: true
+  - type: textarea
+    id: non_goals
+    attributes:
+      label: Out of scope
+      description: Name nearby work that this issue deliberately excludes.
+      placeholder: |
+        - ...
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Each item must be observable and verifiable.
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification
+      description: Commands, tests, screenshots, explorer links, or review evidence required.
+      placeholder: |
+        - Command: ...
+        - Evidence: ...
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: Link anything that blocks this issue or that this issue blocks.
+      placeholder: Blocked by #...; blocks #...
+  - type: checkboxes
+    id: risk
+    attributes:
+      label: Risk and truthfulness
+      options:
+        - label: I identified whether this affects funds, reserves, roles, policies, deployment, or mainnet state.
+          required: true
+        - label: I will not use a mock, hardcoded success, fake receipt, or simulated integration in a production path.
+          required: true
+        - label: Any test-only mock will be clearly isolated and labelled.
+          required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Proposed approach
+      description: The assignee can add a short approach when claiming the issue.
