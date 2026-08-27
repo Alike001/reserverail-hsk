@@ -65,6 +65,7 @@ contract ReserveVaultTest {
         require(!repeated, "reinitialization succeeded");
     }
 }
+
 contract MockReserve {
     uint8 private reserveDecimals = 6;
     mapping(address account => uint256 balance) public balanceOf;

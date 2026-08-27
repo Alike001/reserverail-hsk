@@ -9,6 +9,7 @@ interface IERC20Reserve {
     function transfer(address to, uint256 amount) external returns (bool);
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
 }
+
 contract ReserveVault {
     uint8 public constant DECIMALS = 6;
 
