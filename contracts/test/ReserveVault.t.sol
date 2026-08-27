@@ -40,9 +40,7 @@ contract ReserveVaultTest {
         vault.depositAndMint(1_000_000, address(this));
         vault.pause();
 
-        (bool depositSucceeded,) = address(vault).call(
-            abi.encodeCall(vault.depositAndMint, (1, address(this)))
-        );
+        (bool depositSucceeded,) = address(vault).call(abi.encodeCall(vault.depositAndMint, (1, address(this))));
         require(!depositSucceeded, "paused deposit succeeded");
         vault.redeem(1_000_000, address(this));
         require(token.totalSupply() == 0, "paused redemption failed");
@@ -52,20 +50,21 @@ contract ReserveVaultTest {
         MockReserve reserve = new MockReserve();
         reserve.setDecimals(18);
         ReserveVault vault = new ReserveVault();
-        (bool invalidReserve,) = address(vault).call(
-            abi.encodeCall(vault.initialize, (address(reserve), address(this), ADMINISTRATOR, OPERATOR, PAUSER))
-        );
+        (bool invalidReserve,) = address(vault)
+            .call(abi.encodeCall(vault.initialize, (address(reserve), address(this), ADMINISTRATOR, OPERATOR, PAUSER)));
         require(!invalidReserve, "unsupported decimals accepted");
 
         MockReserve supportedReserve = new MockReserve();
         vault.initialize(address(supportedReserve), address(this), ADMINISTRATOR, OPERATOR, PAUSER);
-        (bool repeated,) = address(vault).call(
-            abi.encodeCall(vault.initialize, (address(supportedReserve), address(this), ADMINISTRATOR, OPERATOR, PAUSER))
-        );
+        (bool repeated,) = address(vault)
+            .call(
+                abi.encodeCall(
+                    vault.initialize, (address(supportedReserve), address(this), ADMINISTRATOR, OPERATOR, PAUSER)
+                )
+            );
         require(!repeated, "reinitialization succeeded");
     }
 }
-
 contract MockReserve {
     uint8 private reserveDecimals = 6;
     mapping(address account => uint256 balance) public balanceOf;
