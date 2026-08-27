@@ -32,6 +32,33 @@ Deposit USDC.e → Mint → Distribute → Redeem
 - [GitHub backlog](./docs/github-backlog.md)
 - [Research context](./context/README.md)
 
+## Development
+
+Prerequisites:
+
+- Node.js 22.12 or newer
+- pnpm 10.33.1
+- Foundry 1.7 or newer
+
+```bash
+pnpm install --frozen-lockfile
+pnpm dev
+```
+
+The local web shell starts without secrets. It truthfully reports that no live pilot exists
+until a reviewed HSK address manifest is committed.
+
+Implemented repository commands:
+
+```bash
+pnpm format:check
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+pnpm verify
+```
+
 ## Product Rules
 
 - A token is not called stable merely because its name says USD.

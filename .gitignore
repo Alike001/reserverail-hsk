@@ -6,6 +6,8 @@ out/
 coverage/
 cache/
 artifacts/
+contracts/lib/
+broadcast/
 
 # Local configuration and secrets
 .env

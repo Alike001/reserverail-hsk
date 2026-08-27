@@ -1,42 +1,32 @@
 # Project Quality Profile: ReserveRail
 
-Status: **Provisional before scaffold**  
+Status: **Active after Phase 2 scaffold**
 Date: **2026-08-27**
 
 ## Detected Stack
 
-The current workspace contains research, specification and planning Markdown only. There is no
-application manifest, contract project, test suite or CI configuration to inspect yet.
-
-Proposed stack to validate during scaffold:
-
-- Solidity contracts with Foundry.
-- Maintained OpenZeppelin contract dependencies.
-- TypeScript web application built as a static client where practical.
-- HSK JSON-RPC and Blockscout integration.
-- A package manager with a committed lockfile; select one and use it consistently.
-- GitHub Actions for required checks.
-
-This profile must be regenerated after manifests and scripts exist. Proposed commands below
-must not be described as existing until the scaffold implements them.
+- pnpm `10.33.1` workspace with a committed lockfile.
+- Node.js `>=22.12.0`; scaffold verified locally with Node.js `24.14.1`.
+- Vite `8.2.2`, React `19.2.8`, TypeScript `6.0.3`, and Oxlint `1.80.0` web client.
+- Prettier `3.9.6` for web formatting.
+- Foundry `1.7.1` with pinned Solidity `0.8.30` for contracts.
+- Static/read-only web architecture; no backend, database, indexer, or private startup secret.
+- HSK JSON-RPC and Blockscout integration is planned behind a checked manifest in P2-05.
+- GitHub Actions are not implemented until P2-04.
 
 ## Existing Commands
 
-None.
+- `pnpm dev`: start the static web client.
+- `pnpm format` / `pnpm format:check`: Prettier plus `forge fmt`.
+- `pnpm lint`: Oxlint web sources.
+- `pnpm typecheck`: TypeScript project build without emitting application output.
+- `pnpm test`: current Foundry scaffold tests.
+- `pnpm contracts:build`: compile Solidity.
+- `pnpm build`: typecheck and build web/contracts.
+- `pnpm verify`: run every implemented local gate.
 
-The scaffold should expose one repository-level command for each of these behaviors:
-
-- `format`
-- `lint`
-- `typecheck`
-- `test`
-- `test:invariant`
-- `security`
-- `build`
-- `dev`
-- `verify`
-
-The exact command runner will be chosen with the monorepo structure.
+`test:invariant`, static security analysis, and web tests are intentionally absent until real
+contract and web behavior exists. A passing empty command would be a false quality gate.
 
 ## Required Local Checks
 
@@ -123,10 +113,9 @@ When the implementation repository is scaffolded, repository instructions should
 
 ## Open Questions
 
-- Foundry-only contracts or Hardhat plus Foundry?
-  Recommendation: Foundry-only unless a verified deployment/verification need requires
+- Foundry-only is selected unless a verified deployment/verification limitation requires
   another tool.
-- Which web framework and package manager will the team already be fastest with?
+- Vite/React/TypeScript and pnpm are selected for the submission.
 - Will the static web app require an indexer, or can RPC/event reads satisfy the MVP?
   Recommendation: no mandatory backend for the read-only and core transaction path.
 - Which Slither and dependency-scanning versions will CI pin?
