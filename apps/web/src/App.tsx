@@ -18,6 +18,12 @@ const IssuerCreateView = lazy(() =>
   })),
 );
 
+const HolderDesk = lazy(() =>
+  import("./components/HolderDesk").then((module) => ({
+    default: module.HolderDesk,
+  })),
+);
+
 function App() {
   const { route, navigate } = useRoute();
   const [managedPair, setManagedPair] = useState<{
@@ -48,6 +54,20 @@ function App() {
                 setManagedPair(pair);
                 navigate("controls");
               }}
+            />
+          </Suspense>
+        ) : route === "holder" ? (
+          <Suspense
+            fallback={
+              <div className="pilot-state-card">
+                <h3>Loading Holder Desk…</h3>
+                <p>Reading stablecoin and reserve balances from HSK Chain…</p>
+              </div>
+            }
+          >
+            <HolderDesk
+              tokenAddressOverride={managedPair?.token}
+              vaultAddressOverride={managedPair?.vault}
             />
           </Suspense>
         ) : (

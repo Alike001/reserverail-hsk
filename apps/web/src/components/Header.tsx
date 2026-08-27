@@ -78,6 +78,14 @@ export function Header({ currentRoute, onNavigate }: HeaderProps) {
           </button>
           <button
             type="button"
+            className={`nav-item ${currentRoute === "holder" ? "active" : ""}`}
+            onClick={() => onNavigate("holder")}
+            aria-current={currentRoute === "holder" ? "page" : undefined}
+          >
+            Holder Desk
+          </button>
+          <button
+            type="button"
             className={`nav-item ${currentRoute === "controls" ? "active" : ""}`}
             onClick={() => onNavigate("controls")}
             aria-current={currentRoute === "controls" ? "page" : undefined}

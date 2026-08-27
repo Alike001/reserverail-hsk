@@ -14,6 +14,9 @@ function getRouteFromLocation(): RouteState {
   if (hash === "#create" || path === "/create") {
     return "create";
   }
+  if (hash === "#holder" || path === "/holder") {
+    return "holder";
+  }
   return "landing";
 }
 
@@ -46,7 +49,9 @@ export function useRoute(): {
             ? "#controls"
             : newRoute === "create"
               ? "#create"
-              : "#landing";
+              : newRoute === "holder"
+                ? "#holder"
+                : "#landing";
       if (window.location.hash !== targetHash) {
         window.history.pushState({}, "", targetHash);
       }
