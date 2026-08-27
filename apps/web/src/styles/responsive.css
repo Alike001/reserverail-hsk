@@ -24,7 +24,18 @@
   }
 
   .site-nav {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     width: 100%;
+    gap: 4px;
+  }
+
+  .nav-item {
+    min-width: 0;
+    justify-content: center;
+    padding-inline: 6px;
+    flex-wrap: wrap;
+    text-align: center;
   }
 
   .wallet-status,

@@ -7,15 +7,15 @@ import {
   type Address,
 } from "../config/hsk";
 import {
+  executeTokenAdministratorRotation,
   executeVaultPause,
   executeVaultRotateRole,
   executeVaultUnpause,
-  fetchVaultAuthorities,
-  ROLE_IDENTIFIERS,
+  fetchPairAuthorities,
   validateNewAccountAddress,
+  type PairAuthorities,
   type RoleAuditRecord,
-  type RoleType,
-  type VaultAuthorities,
+  type RoleSelection,
 } from "../wallet/roles";
 import { walletStore, type WalletStore } from "../wallet/store";
 import type { TransactionState } from "../wallet/transaction";
@@ -23,19 +23,25 @@ import { useWallet } from "../wallet/use-wallet";
 
 interface AccessAndEmergencyControlsProps {
   store?: WalletStore;
+  tokenAddressOverride?: Address;
   vaultAddressOverride?: Address;
 }
 
 export function AccessAndEmergencyControls({
   store = walletStore,
+  tokenAddressOverride,
   vaultAddressOverride,
 }: AccessAndEmergencyControlsProps) {
   const wallet = useWallet(store);
   const vaultAddress =
     vaultAddressOverride ?? deploymentManifest.pilot.vault ?? undefined;
+  const tokenAddress =
+    tokenAddressOverride ?? deploymentManifest.pilot.token ?? undefined;
 
-  const [authorities, setAuthorities] = useState<VaultAuthorities | null>(null);
-  const [isLoadingAuth, setIsLoadingAuth] = useState(false);
+  const [authorities, setAuthorities] = useState<PairAuthorities | null>(null);
+  const [isLoadingAuth, setIsLoadingAuth] = useState(() =>
+    Boolean(vaultAddress && tokenAddress),
+  );
   const [authError, setAuthError] = useState<string | null>(null);
 
   // Pause / Unpause Action State
@@ -49,7 +55,7 @@ export function AccessAndEmergencyControls({
 
   // Role Rotation Form State
   const [selectedRole, setSelectedRole] =
-    useState<RoleType>("RESERVE_OPERATOR");
+    useState<RoleSelection>("RESERVE_OPERATOR");
   const [newAccountInput, setNewAccountInput] = useState("");
   const [adminLockoutAcknowledged, setAdminLockoutAcknowledged] =
     useState(false);
@@ -63,27 +69,26 @@ export function AccessAndEmergencyControls({
 
   // Fetch authorities on demand
   const loadAuthorities = useCallback(async () => {
-    if (!vaultAddress) return;
+    if (!vaultAddress || !tokenAddress) return;
     setIsLoadingAuth(true);
     setAuthError(null);
     try {
-      const data = await fetchVaultAuthorities(vaultAddress);
+      const data = await fetchPairAuthorities(vaultAddress, tokenAddress);
       setAuthorities(data);
     } catch (err: unknown) {
       const msg =
         err instanceof Error ? err.message : "Failed to load on-chain roles.";
+      setAuthorities(null);
       setAuthError(msg);
     } finally {
       setIsLoadingAuth(false);
     }
-  }, [vaultAddress]);
+  }, [tokenAddress, vaultAddress]);
 
   useEffect(() => {
     let active = true;
-    if (!vaultAddress) return;
-    setIsLoadingAuth(true);
-    setAuthError(null);
-    fetchVaultAuthorities(vaultAddress)
+    if (!vaultAddress || !tokenAddress) return;
+    fetchPairAuthorities(vaultAddress, tokenAddress)
       .then((data) => {
         if (active) setAuthorities(data);
       })
@@ -93,6 +98,7 @@ export function AccessAndEmergencyControls({
             err instanceof Error
               ? err.message
               : "Failed to load on-chain roles.";
+          setAuthorities(null);
           setAuthError(msg);
         }
       })
@@ -103,71 +109,60 @@ export function AccessAndEmergencyControls({
     return () => {
       active = false;
     };
-  }, [vaultAddress]);
+  }, [tokenAddress, vaultAddress]);
 
   const connectedAccount = wallet.account?.toLowerCase();
-  const isAdmin =
+  const isVaultAdmin =
     Boolean(authorities && connectedAccount) &&
-    authorities?.administrator.toLowerCase() === connectedAccount;
+    authorities?.vault.administrator.toLowerCase() === connectedAccount;
+  const isTokenAdmin =
+    Boolean(authorities && connectedAccount) &&
+    authorities?.token.administrator.toLowerCase() === connectedAccount;
   const isPauser =
     Boolean(authorities && connectedAccount) &&
-    authorities?.pauser.toLowerCase() === connectedAccount;
+    authorities?.vault.pauser.toLowerCase() === connectedAccount;
 
-  const canPause = isAdmin || isPauser;
-  const canUnpause = isAdmin; // Only Admin can unpause!
-  const canRotate = isAdmin; // Only Admin can rotate roles!
+  const canPause = isVaultAdmin || isPauser;
+  const canUnpause = isVaultAdmin;
+  const canRotateAny = isVaultAdmin || isTokenAdmin;
+  const canRotateSelected =
+    selectedRole === "TOKEN_ADMINISTRATOR" ? isTokenAdmin : isVaultAdmin;
 
-  const isPaused = authorities?.operationallyPaused ?? false;
+  const isPaused = authorities?.vault.operationallyPaused ?? false;
+  const pauseBusy = isTransactionBusy(pauseTxState);
+  const rotateBusy = isTransactionBusy(rotateTxState);
 
   // Handle Pause / Unpause Execution
   const handleExecutePauseAction = async () => {
-    if (!vaultAddress || !wallet.account) return;
+    if (!vaultAddress || !tokenAddress || !wallet.account) return;
     const client = store.getClient();
     if (!client) return;
 
     setShowPauseConfirm(false);
     try {
       if (pauseActionType === "pause") {
-        const { receipt } = await executeVaultPause({
+        const { result } = await executeVaultPause({
           vaultAddress,
+          tokenAddress,
           walletClient: client,
           account: wallet.account,
           onState: setPauseTxState,
         });
 
-        // Add confirmed audit record
-        const newRecord: RoleAuditRecord = {
-          id: `${receipt.transactionHash}-pause`,
-          type: "Paused",
-          contractAddress: vaultAddress,
-          actor: wallet.account,
-          txHash: receipt.transactionHash,
-          blockNumber: receipt.blockNumber,
-          timestamp: new Date().toLocaleTimeString(),
-        };
-        setAuditLog((prev) => [newRecord, ...prev]);
+        setAuthorities(result.authorities);
+        setAuditLog((previous) => [result.auditRecord, ...previous]);
       } else if (pauseActionType === "unpause") {
-        const { receipt } = await executeVaultUnpause({
+        const { result } = await executeVaultUnpause({
           vaultAddress,
+          tokenAddress,
           walletClient: client,
           account: wallet.account,
           onState: setPauseTxState,
         });
 
-        const newRecord: RoleAuditRecord = {
-          id: `${receipt.transactionHash}-unpause`,
-          type: "Unpaused",
-          contractAddress: vaultAddress,
-          actor: wallet.account,
-          txHash: receipt.transactionHash,
-          blockNumber: receipt.blockNumber,
-          timestamp: new Date().toLocaleTimeString(),
-        };
-        setAuditLog((prev) => [newRecord, ...prev]);
+        setAuthorities(result.authorities);
+        setAuditLog((previous) => [result.auditRecord, ...previous]);
       }
-
-      // Re-fetch authoritative state post-confirmation
-      await loadAuthorities();
     } catch {
       // Handled in transaction state
     }
@@ -175,7 +170,7 @@ export function AccessAndEmergencyControls({
 
   // Handle Role Rotation Execution
   const handleExecuteRotateRole = async () => {
-    if (!vaultAddress || !wallet.account) return;
+    if (!vaultAddress || !tokenAddress || !wallet.account) return;
     const client = store.getClient();
     if (!client) return;
 
@@ -184,49 +179,45 @@ export function AccessAndEmergencyControls({
 
     setShowRotateConfirm(false);
     try {
-      const roleHash = ROLE_IDENTIFIERS[selectedRole];
-      const { receipt } = await executeVaultRotateRole({
-        vaultAddress,
-        roleHash,
-        newAccount: validated.sanitizedAddress,
-        walletClient: client,
-        account: wallet.account,
-        onState: setRotateTxState,
-      });
-
-      const newRecord: RoleAuditRecord = {
-        id: `${receipt.transactionHash}-rotate`,
-        type: "RoleRotated",
-        contractAddress: vaultAddress,
-        actor: wallet.account,
-        role: selectedRole,
-        previousAccount:
-          selectedRole === "ADMINISTRATOR"
-            ? authorities?.administrator
-            : selectedRole === "RESERVE_OPERATOR"
-              ? authorities?.reserveOperator
-              : authorities?.pauser,
-        newAccount: validated.sanitizedAddress,
-        txHash: receipt.transactionHash,
-        blockNumber: receipt.blockNumber,
-        timestamp: new Date().toLocaleTimeString(),
-      };
-      setAuditLog((prev) => [newRecord, ...prev]);
+      const execution =
+        selectedRole === "TOKEN_ADMINISTRATOR"
+          ? executeTokenAdministratorRotation({
+              account: wallet.account,
+              newAccount: validated.sanitizedAddress,
+              onState: setRotateTxState,
+              tokenAddress,
+              vaultAddress,
+              walletClient: client,
+            })
+          : executeVaultRotateRole({
+              account: wallet.account,
+              newAccount: validated.sanitizedAddress,
+              onState: setRotateTxState,
+              role: selectedRole,
+              tokenAddress,
+              vaultAddress,
+              walletClient: client,
+            });
+      const { result } = await execution;
+      setAuthorities(result.authorities);
+      setAuditLog((previous) => [result.auditRecord, ...previous]);
 
       setNewAccountInput("");
       setAdminLockoutAcknowledged(false);
-
-      // Re-fetch authoritative state post-confirmation
-      await loadAuthorities();
     } catch {
       // Handled in transaction state
     }
   };
 
   const validationResult = validateNewAccountAddress(newAccountInput);
-  const isRotatingAdmin = selectedRole === "ADMINISTRATOR";
+  const isRotatingAdmin =
+    selectedRole === "ADMINISTRATOR" || selectedRole === "TOKEN_ADMINISTRATOR";
   const isRotationValid =
-    validationResult.valid && (!isRotatingAdmin || adminLockoutAcknowledged);
+    validationResult.valid &&
+    canRotateSelected &&
+    (!isRotatingAdmin || adminLockoutAcknowledged);
+  const rotationTargetAddress =
+    selectedRole === "TOKEN_ADMINISTRATOR" ? tokenAddress : vaultAddress;
 
   return (
     <div className="controls-view">
@@ -240,12 +231,12 @@ export function AccessAndEmergencyControls({
         </p>
       </div>
 
-      {!vaultAddress ? (
+      {!vaultAddress || !tokenAddress ? (
         <div className="pilot-state-card" role="status">
           <h3>Pilot Vault Undeployed</h3>
           <p>
             The HSK mainnet deployment manifest is currently undeployed.
-            Controls will connect to the verified vault once contract addresses
+            Controls will connect once both verified token and vault addresses
             are committed.
           </p>
         </div>
@@ -288,26 +279,63 @@ export function AccessAndEmergencyControls({
               {/* Administrator Card */}
               <div
                 className={`authority-card ${
-                  isAdmin ? "caller-holds-role" : ""
+                  isVaultAdmin ? "caller-holds-role" : ""
                 }`}
               >
                 <div className="authority-role-title">
-                  <span className="authority-role-name">Administrator</span>
-                  {isAdmin && <span className="caller-badge">Your Wallet</span>}
+                  <span className="authority-role-name">
+                    Vault Administrator
+                  </span>
+                  {isVaultAdmin && (
+                    <span className="caller-badge">Your Wallet</span>
+                  )}
                 </div>
                 <p className="authority-desc">
-                  Exclusive power to unpause the vault and rotate contract
-                  roles.
+                  Exclusive power to unpause the vault and rotate vault roles.
                 </p>
                 <div className="authority-address">
                   {authorities ? (
                     <a
-                      href={toExplorerAddress(authorities.administrator)}
+                      href={toExplorerAddress(authorities.vault.administrator)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      title={authorities.administrator}
+                      title={authorities.vault.administrator}
                     >
-                      {shorten(authorities.administrator)} ↗
+                      {shorten(authorities.vault.administrator)} ↗
+                    </a>
+                  ) : (
+                    <span className="item-label">Loading…</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Token Administrator Card */}
+              <div
+                className={`authority-card ${
+                  isTokenAdmin ? "caller-holds-role" : ""
+                }`}
+              >
+                <div className="authority-role-title">
+                  <span className="authority-role-name">
+                    Token Administrator
+                  </span>
+                  {isTokenAdmin && (
+                    <span className="caller-badge">Your Wallet</span>
+                  )}
+                </div>
+                <p className="authority-desc">
+                  Controls token-specific administration. This authority can
+                  differ from the vault administrator.
+                </p>
+                <div className="authority-address">
+                  {authorities ? (
+                    <a
+                      href={toExplorerAddress(authorities.token.administrator)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={authorities.token.administrator}
+                    >
+                      {shorten(authorities.token.administrator)} ↗
                     </a>
                   ) : (
                     <span className="item-label">Loading…</span>
@@ -319,7 +347,8 @@ export function AccessAndEmergencyControls({
               <div
                 className={`authority-card ${
                   authorities &&
-                  connectedAccount === authorities.reserveOperator.toLowerCase()
+                  connectedAccount ===
+                    authorities.vault.reserveOperator.toLowerCase()
                     ? "caller-holds-role"
                     : ""
                 }`}
@@ -328,7 +357,7 @@ export function AccessAndEmergencyControls({
                   <span className="authority-role-name">Reserve Operator</span>
                   {authorities &&
                     connectedAccount ===
-                      authorities.reserveOperator.toLowerCase() && (
+                      authorities.vault.reserveOperator.toLowerCase() && (
                       <span className="caller-badge">Your Wallet</span>
                     )}
                 </div>
@@ -339,12 +368,14 @@ export function AccessAndEmergencyControls({
                 <div className="authority-address">
                   {authorities ? (
                     <a
-                      href={toExplorerAddress(authorities.reserveOperator)}
+                      href={toExplorerAddress(
+                        authorities.vault.reserveOperator,
+                      )}
                       target="_blank"
                       rel="noopener noreferrer"
-                      title={authorities.reserveOperator}
+                      title={authorities.vault.reserveOperator}
                     >
-                      {shorten(authorities.reserveOperator)} ↗
+                      {shorten(authorities.vault.reserveOperator)} ↗
                     </a>
                   ) : (
                     <span className="item-label">Loading…</span>
@@ -371,12 +402,12 @@ export function AccessAndEmergencyControls({
                 <div className="authority-address">
                   {authorities ? (
                     <a
-                      href={toExplorerAddress(authorities.pauser)}
+                      href={toExplorerAddress(authorities.vault.pauser)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      title={authorities.pauser}
+                      title={authorities.vault.pauser}
                     >
-                      {shorten(authorities.pauser)} ↗
+                      {shorten(authorities.vault.pauser)} ↗
                     </a>
                   ) : (
                     <span className="item-label">Loading…</span>
@@ -443,7 +474,7 @@ export function AccessAndEmergencyControls({
                     AVAILABLE
                   </span>
                   <span className="matrix-item-detail">
-                    Holders can always burn tokens directly to exit for USDC.e.
+                    The ordinary pause does not block the vault redemption path.
                   </span>
                 </div>
                 <div className="matrix-item">
@@ -467,8 +498,9 @@ export function AccessAndEmergencyControls({
                 By architectural design, the vault's <code>redeem</code> path
                 executes supply burn directly via vault-only authorization,
                 bypassing the ordinary transfer pause. This guarantees that an
-                operational incident never strands legitimate holders from
-                withdrawing their underlying 1:1 USDC.e reserve backing.
+                ordinary pause does not disable the supported 1:1 USDC.e
+                redemption route. Redemption still depends on usable reserve and
+                successful reserve-token transfer.
               </p>
             </div>
 
@@ -478,28 +510,28 @@ export function AccessAndEmergencyControls({
                 <button
                   type="button"
                   className="btn btn-pause"
-                  disabled={!canPause || pauseTxState?.phase === "pending"}
+                  disabled={!canPause || pauseBusy}
                   onClick={() => {
                     setPauseActionType("pause");
                     setShowPauseConfirm(true);
                   }}
                 >
-                  {pauseTxState?.phase === "pending"
-                    ? "Pausing Vault…"
+                  {pauseBusy
+                    ? transactionButtonLabel(pauseTxState, "Pausing Vault")
                     : "Pause Operations"}
                 </button>
               ) : (
                 <button
                   type="button"
                   className="btn btn-unpause"
-                  disabled={!canUnpause || pauseTxState?.phase === "pending"}
+                  disabled={!canUnpause || pauseBusy}
                   onClick={() => {
                     setPauseActionType("unpause");
                     setShowPauseConfirm(true);
                   }}
                 >
-                  {pauseTxState?.phase === "pending"
-                    ? "Resuming Vault…"
+                  {pauseBusy
+                    ? transactionButtonLabel(pauseTxState, "Resuming Vault")
                     : "Resume Operations (Unpause)"}
                 </button>
               )}
@@ -515,12 +547,7 @@ export function AccessAndEmergencyControls({
               </span>
             </div>
 
-            {/* Pause Transaction Feedback */}
-            {pauseTxState?.phase === "failed" && (
-              <div className="wallet-feedback" role="alert">
-                <span>{pauseTxState.error.message}</span>
-              </div>
-            )}
+            <TransactionFeedback state={pauseTxState} />
           </section>
 
           {/* Role Rotation Panel */}
@@ -554,17 +581,22 @@ export function AccessAndEmergencyControls({
                   className="form-select"
                   value={selectedRole}
                   onChange={(e) => {
-                    setSelectedRole(e.target.value as RoleType);
+                    setSelectedRole(e.target.value as RoleSelection);
                     setAdminLockoutAcknowledged(false);
                   }}
-                  disabled={!canRotate}
+                  disabled={!canRotateAny}
                 >
-                  <option value="RESERVE_OPERATOR">
+                  <option value="RESERVE_OPERATOR" disabled={!isVaultAdmin}>
                     Reserve Operator (Deposit & Mint)
                   </option>
-                  <option value="PAUSER">Emergency Pauser</option>
-                  <option value="ADMINISTRATOR">
-                    Administrator (Governance & Unpause)
+                  <option value="PAUSER" disabled={!isVaultAdmin}>
+                    Emergency Pauser
+                  </option>
+                  <option value="ADMINISTRATOR" disabled={!isVaultAdmin}>
+                    Vault Administrator (Governance & Unpause)
+                  </option>
+                  <option value="TOKEN_ADMINISTRATOR" disabled={!isTokenAdmin}>
+                    Token Administrator (Token Governance)
                   </option>
                 </select>
               </div>
@@ -580,7 +612,7 @@ export function AccessAndEmergencyControls({
                   placeholder="0x..."
                   value={newAccountInput}
                   onChange={(e) => setNewAccountInput(e.target.value)}
-                  disabled={!canRotate}
+                  disabled={!canRotateSelected}
                 />
                 {newAccountInput.trim() && !validationResult.valid && (
                   <span className="form-error-msg">
@@ -596,11 +628,12 @@ export function AccessAndEmergencyControls({
                     ⚠️ Critical: Administrator Authority Handover
                   </span>
                   <p className="lockout-desc">
-                    Rotating the Administrator role transfers all governance and
-                    unpause powers to{" "}
+                    Rotating this administrator transfers only the selected
+                    contract's authority to{" "}
                     <code>{validationResult.sanitizedAddress}</code>. Your
-                    current wallet (<code>{wallet.account}</code>) will
-                    permanently lose admin rights over this vault.
+                    current wallet (<code>{wallet.account}</code>) will lose
+                    that contract's administrator rights. The other contract
+                    administrator is unchanged.
                   </p>
                   <label className="lockout-checkbox-label">
                     <input
@@ -619,40 +652,34 @@ export function AccessAndEmergencyControls({
               <button
                 type="submit"
                 className="btn btn-primary"
-                disabled={
-                  !canRotate ||
-                  !isRotationValid ||
-                  rotateTxState?.phase === "pending"
-                }
+                disabled={!canRotateSelected || !isRotationValid || rotateBusy}
               >
-                {rotateTxState?.phase === "pending"
-                  ? "Rotating Role…"
+                {rotateBusy
+                  ? transactionButtonLabel(rotateTxState, "Rotating Role")
                   : "Review & Rotate Role"}
               </button>
 
-              {!canRotate && (
+              {!canRotateSelected && (
                 <span className="action-auth-note">
-                  Requires Administrator wallet (
-                  {authorities ? shorten(authorities.administrator) : "..."}) to
-                  rotate roles.
+                  Requires the current {roleContractLabel(selectedRole)} (
+                  {authorities
+                    ? shorten(roleAdministrator(authorities, selectedRole))
+                    : "..."}
+                  ) to rotate this role.
                 </span>
               )}
             </form>
 
-            {/* Rotate Transaction Feedback */}
-            {rotateTxState?.phase === "failed" && (
-              <div className="wallet-feedback" role="alert">
-                <span>{rotateTxState.error.message}</span>
-              </div>
-            )}
+            <TransactionFeedback state={rotateTxState} />
           </section>
 
-          {/* Confirmed Audit Log */}
+          {/* Receipt-decoded on-chain event log */}
           <section className="audit-panel" aria-labelledby="audit-heading">
-            <h2 id="audit-heading">Confirmed Audit History</h2>
+            <h2 id="audit-heading">Verified Events From This Session</h2>
             {auditLog.length === 0 ? (
               <p className="action-subtext">
-                No role rotation or emergency events submitted in this session.
+                No receipt-decoded role rotation or emergency events in this
+                session.
               </p>
             ) : (
               <ul className="audit-list">
@@ -712,9 +739,20 @@ export function AccessAndEmergencyControls({
                 <span className="review-val code-font">{wallet.account}</span>
               </div>
               <div className="review-row">
+                <span className="review-label">HSK Chain</span>
+                <span className="review-val">Mainnet · Chain ID 177</span>
+              </div>
+              <div className="review-row">
+                <span className="review-label">Paused Impact</span>
+                <span className="review-val">
+                  Deposit/mint and transfers blocked; role recovery and backed
+                  redemption remain available.
+                </span>
+              </div>
+              <div className="review-row">
                 <span className="review-label">Redemption State</span>
                 <span className="review-val status-available">
-                  Always Available (1:1 USDC.e exit)
+                  Supported during ordinary pause (1:1 USDC.e route)
                 </span>
               </div>
             </div>
@@ -751,8 +789,10 @@ export function AccessAndEmergencyControls({
                 <span className="review-val">{selectedRole}</span>
               </div>
               <div className="review-row">
-                <span className="review-label">Target Vault</span>
-                <span className="review-val code-font">{vaultAddress}</span>
+                <span className="review-label">Target Contract</span>
+                <span className="review-val code-font">
+                  {rotationTargetAddress}
+                </span>
               </div>
               <div className="review-row">
                 <span className="review-label">New Authority</span>
@@ -764,7 +804,7 @@ export function AccessAndEmergencyControls({
                 <div className="review-row">
                   <span className="review-label">Warning</span>
                   <span className="review-val status-blocked">
-                    Current wallet loses Admin privileges
+                    Current wallet loses this contract's Admin privileges
                   </span>
                 </div>
               )}
@@ -795,4 +835,74 @@ export function AccessAndEmergencyControls({
 function shorten(address: string): string {
   if (!address || address.length < 10) return address;
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
+}
+
+function isTransactionBusy(state: TransactionState | null): boolean {
+  return (
+    state?.phase === "awaiting-signature" ||
+    state?.phase === "pending" ||
+    state?.phase === "verifying"
+  );
+}
+
+function transactionButtonLabel(
+  state: TransactionState | null,
+  action: string,
+): string {
+  if (state?.phase === "awaiting-signature") return "Confirm in Wallet…";
+  if (state?.phase === "verifying") return "Verifying On-Chain State…";
+  return `${action}…`;
+}
+
+function roleContractLabel(role: RoleSelection): string {
+  return role === "TOKEN_ADMINISTRATOR"
+    ? "token administrator"
+    : "vault administrator";
+}
+
+function roleAdministrator(
+  authorities: PairAuthorities,
+  role: RoleSelection,
+): Address {
+  return role === "TOKEN_ADMINISTRATOR"
+    ? authorities.token.administrator
+    : authorities.vault.administrator;
+}
+
+function TransactionFeedback({ state }: { state: TransactionState | null }) {
+  if (!state) return null;
+  if (state.phase === "failed") {
+    return (
+      <div className="wallet-feedback" role="alert">
+        <span>{state.error.message} You can review the state and retry.</span>
+      </div>
+    );
+  }
+  if (state.phase === "awaiting-signature") {
+    return (
+      <div className="wallet-feedback" role="status">
+        <span>Waiting for wallet signature. No transaction exists yet.</span>
+      </div>
+    );
+  }
+
+  const message =
+    state.phase === "pending"
+      ? "Transaction submitted; waiting for an HSK receipt."
+      : state.phase === "verifying"
+        ? "Receipt succeeded; verifying paired contract state and event logs."
+        : "Confirmed from receipt, block-pinned reads, and decoded events.";
+  return (
+    <div className="wallet-feedback" role="status">
+      <span>{message}</span>
+      <a
+        href={toExplorerTransaction(state.hash)}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="wallet-retry"
+      >
+        View transaction ↗
+      </a>
+    </div>
+  );
 }
