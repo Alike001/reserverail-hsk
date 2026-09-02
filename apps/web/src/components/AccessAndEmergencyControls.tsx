@@ -23,8 +23,8 @@ import { useWallet } from "../wallet/use-wallet";
 
 interface AccessAndEmergencyControlsProps {
   store?: WalletStore;
-  tokenAddressOverride?: Address;
-  vaultAddressOverride?: Address;
+  tokenAddressOverride?: Address | null;
+  vaultAddressOverride?: Address | null;
 }
 
 export function AccessAndEmergencyControls({
@@ -34,9 +34,13 @@ export function AccessAndEmergencyControls({
 }: AccessAndEmergencyControlsProps) {
   const wallet = useWallet(store);
   const vaultAddress =
-    vaultAddressOverride ?? deploymentManifest.pilot.vault ?? undefined;
+    vaultAddressOverride === undefined
+      ? (deploymentManifest.pilot.vault ?? undefined)
+      : (vaultAddressOverride ?? undefined);
   const tokenAddress =
-    tokenAddressOverride ?? deploymentManifest.pilot.token ?? undefined;
+    tokenAddressOverride === undefined
+      ? (deploymentManifest.pilot.token ?? undefined)
+      : (tokenAddressOverride ?? undefined);
 
   const [authorities, setAuthorities] = useState<PairAuthorities | null>(null);
   const [isLoadingAuth, setIsLoadingAuth] = useState(() =>

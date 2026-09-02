@@ -26,7 +26,7 @@ import { useWallet } from "../wallet/use-wallet";
 
 interface IssuerCreateViewProps {
   store?: WalletStore;
-  factoryAddressOverride?: Address;
+  factoryAddressOverride?: Address | null;
   usdcAddressOverride?: Address;
   onSuccessNavigate?: (
     pair: Pick<DiscoveredIssuerPair, "token" | "vault">,
@@ -44,7 +44,9 @@ export function IssuerCreateView({
 }: IssuerCreateViewProps) {
   const wallet = useWallet(store);
   const factoryAddress =
-    factoryAddressOverride ?? deploymentManifest.factory ?? undefined;
+    factoryAddressOverride === undefined
+      ? (deploymentManifest.factory ?? undefined)
+      : (factoryAddressOverride ?? undefined);
   const usdcAddress = usdcAddressOverride ?? HSK_MAINNET_USDC_E;
 
   const defaultAccount = wallet.account ?? "";

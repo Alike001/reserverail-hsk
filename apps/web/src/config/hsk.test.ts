@@ -43,11 +43,20 @@ describe("HSK configuration", () => {
     );
   });
 
-  it("keeps the checked-in product state explicitly undeployed", () => {
-    expect(deploymentManifest.status).toBe("undeployed");
-    expect(deploymentManifest.factory).toBeNull();
-    expect(deploymentManifest.pilot.token).toBeNull();
-    expect(deploymentManifest.pilot.vault).toBeNull();
+  it("loads the checked, provenance-bound mainnet deployment", () => {
+    expect(deploymentManifest.status).toBe("deployed");
+    expect(deploymentManifest.sourceCommit).toBe(
+      "ab6928abd991848ec4886e264b8d9708def694b0",
+    );
+    expect(deploymentManifest.factory).toBe(
+      "0xe6F9207A41766edB96B762e29Bd6B299e1009Df6",
+    );
+    expect(deploymentManifest.pilot.token).toBe(
+      "0x98D13E05EaaC2E66e86A87603781c6ff9b9cd8B0",
+    );
+    expect(deploymentManifest.pilot.vault).toBe(
+      "0x05edbecb97ee9128a83465D6227b680627C5130b",
+    );
   });
 
   it("rejects a deployed manifest without real addresses and provenance", () => {
