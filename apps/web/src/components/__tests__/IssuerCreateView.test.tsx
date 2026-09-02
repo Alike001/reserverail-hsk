@@ -19,7 +19,7 @@ describe("IssuerCreateView", () => {
   });
 
   it("renders truthful undeployed message when factory address is missing", () => {
-    render(<IssuerCreateView factoryAddressOverride={undefined} />);
+    render(<IssuerCreateView factoryAddressOverride={null} />);
     expect(screen.getByText("Stablecoin Factory Undeployed")).toBeDefined();
     expect(
       screen.getByText(/The factory contract is not yet committed/),

@@ -29,8 +29,8 @@ import { UnauditedBadge } from "./UnauditedBadge";
 
 interface HolderDeskProps {
   store?: WalletStore;
-  tokenAddressOverride?: Address;
-  vaultAddressOverride?: Address;
+  tokenAddressOverride?: Address | null;
+  vaultAddressOverride?: Address | null;
 }
 
 type ReviewAction = "redeem" | "transfer" | null;
@@ -42,9 +42,13 @@ export function HolderDesk({
 }: HolderDeskProps) {
   const wallet = useWallet(store);
   const tokenAddress =
-    tokenAddressOverride ?? deploymentManifest.pilot.token ?? undefined;
+    tokenAddressOverride === undefined
+      ? (deploymentManifest.pilot.token ?? undefined)
+      : (tokenAddressOverride ?? undefined);
   const vaultAddress =
-    vaultAddressOverride ?? deploymentManifest.pilot.vault ?? undefined;
+    vaultAddressOverride === undefined
+      ? (deploymentManifest.pilot.vault ?? undefined)
+      : (vaultAddressOverride ?? undefined);
 
   const [position, setPosition] = useState<HolderPosition | null>(null);
   const [isLoading, setIsLoading] = useState(false);

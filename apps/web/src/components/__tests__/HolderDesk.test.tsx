@@ -46,7 +46,9 @@ describe("HolderDesk", () => {
   });
 
   it("renders a truthful unavailable state without committed pair addresses", () => {
-    render(<HolderDesk />);
+    render(
+      <HolderDesk tokenAddressOverride={null} vaultAddressOverride={null} />,
+    );
     expect(
       screen.getByText("Holder route awaiting a deployed pair"),
     ).toBeDefined();

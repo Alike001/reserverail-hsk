@@ -37,14 +37,22 @@ describe("ReserveRail Landing & Pilot Route (P5-01)", () => {
 
   it("reads checked deployment manifest status correctly", () => {
     render(<ManifestStatusCard />);
-    expect(screen.getByText("Awaiting HSK Mainnet Deployment")).toBeDefined();
-    expect(screen.getByText("UNDEPLOYED")).toBeDefined();
+    expect(screen.getByText("Deployed on HSK Mainnet")).toBeDefined();
+    expect(screen.getByText("DEPLOYED")).toBeDefined();
+    expect(
+      screen.getByText("0xe6F9207A41766edB96B762e29Bd6B299e1009Df6"),
+    ).toBeDefined();
     expect(screen.getAllByText(/177/).length).toBeGreaterThan(0);
   });
 
   it("displays explicit, truthful undeployed state in PilotRoute when manifest is undeployed", () => {
     const onNavigate = vi.fn();
-    render(<PilotRoute onNavigate={onNavigate} />);
+    render(
+      <PilotRoute
+        onNavigate={onNavigate}
+        manifestOverride={undeployedManifest}
+      />,
+    );
 
     expect(
       screen.getByRole("heading", {
@@ -75,14 +83,14 @@ describe("ReserveRail Landing & Pilot Route (P5-01)", () => {
 
     // Navigate to Pilot route via Hero CTA
     const inspectBtn = screen.getByRole("button", {
-      name: /Inspect Pilot Route \(Undeployed\)/i,
+      name: /Inspect Live Pilot/i,
     });
     fireEvent.click(inspectBtn);
 
-    // Shows Pilot route undeployed state
+    // Shows the deployed pilot route without requiring a wallet.
     expect(
       screen.getByRole("heading", {
-        name: "Pilot Awaiting HSK Mainnet Deployment",
+        name: "ReserveRail Pilot",
       }),
     ).toBeDefined();
 
@@ -161,6 +169,19 @@ describe("ReserveRail Landing & Pilot Route (P5-01)", () => {
     expect(screen.getByText("deposit")).toBeDefined();
   });
 });
+
+const undeployedManifest = {
+  schemaVersion: 1 as const,
+  status: "undeployed" as const,
+  chainId: 177 as const,
+  sourceCommit: null,
+  factory: null,
+  pilot: {
+    token: null,
+    vault: null,
+  },
+  updatedAt: null,
+};
 
 const deployedManifest = {
   schemaVersion: 1 as const,

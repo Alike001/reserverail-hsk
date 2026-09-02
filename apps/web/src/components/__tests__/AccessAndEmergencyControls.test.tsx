@@ -38,7 +38,12 @@ describe("AccessAndEmergencyControls", () => {
   });
 
   it("renders truthful undeployed state unless both addresses are configured", () => {
-    render(<AccessAndEmergencyControls vaultAddressOverride={VAULT_ADDR} />);
+    render(
+      <AccessAndEmergencyControls
+        tokenAddressOverride={null}
+        vaultAddressOverride={VAULT_ADDR}
+      />,
+    );
     expect(screen.getByText("Pilot Vault Undeployed")).toBeDefined();
     expect(
       screen.getByText(/both verified token and vault addresses/),

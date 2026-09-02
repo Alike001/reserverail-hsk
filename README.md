@@ -8,15 +8,15 @@
 Deposit USDC.e → Mint the same amount → Distribute → Redeem 1:1
 ```
 
-ReserveRail is an unaudited, low-value hackathon pilot. The product and contract lifecycle are implemented, and a complete ten-transaction rehearsal is deployed on HSKChain Testnet. The checked mainnet manifest remains **undeployed**, so the hosted product does not present testnet state as mainnet evidence or substitute fabricated balances, addresses, or receipts.
+ReserveRail is an unaudited, low-value hackathon pilot. The reusable platform and an empty pilot pair are deployed and source-verified on HSK Chain mainnet, and a complete ten-transaction rehearsal is deployed on HSKChain Testnet. The mainnet pilot remains **unfunded**: reserve and supply are both zero, and no mainnet mint, transfer, or redemption is claimed.
 
 ## Run It in 30 Seconds
 
 **Hosted product:** [https://alike001.github.io/reserverail-hsk/](https://alike001.github.io/reserverail-hsk/)
 
-The reviewed GitHub Pages workflow publishes this URL only from changes merged to `main`. The
-site is live over HTTPS; contract-writing actions remain disabled while the checked HSK mainnet
-manifest is undeployed.
+The reviewed GitHub Pages workflow publishes this URL only from changes merged to `main`. After
+this evidence change is reviewed and merged, the site will read the checked HSK mainnet addresses
+and show the empty pilot's real zero reserve and zero supply.
 
 Prerequisites: Node.js 22.12+, pnpm 10.33.1, Foundry 1.7+, and MetaMask.
 
@@ -25,7 +25,7 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Open the local URL printed by Vite, connect MetaMask, and use the built-in network switcher. No private key or application secret is required to inspect the product. Contract-writing actions remain disabled until reviewed deployment addresses are committed.
+Open the local URL printed by Vite, connect MetaMask, and use the built-in network switcher. No private key or application secret is required to inspect the product. Wallet writes require HSK mainnet and the appropriate on-chain role.
 
 ## What Judges Can Inspect
 
@@ -45,6 +45,22 @@ The application targets HSK Chain mainnet (chain ID `177`) and uses HSK as its g
 | HSK Chain Testnet |    `133` | `https://testnet.hsk.xyz` | [Testnet explorer](https://testnet-explorer.hsk.xyz) |
 
 The checked network values and live-RPC preflight are documented in [HSK Chain and USDC.e preflight](./docs/hsk-mainnet-preflight.md). The mainnet application reads addresses only from the reviewed [deployment manifest](./config/deployments/hsk-mainnet.json).
+
+### Verified HSK Chain mainnet platform
+
+The reviewed deployment at source commit `ab6928abd991848ec4886e264b8d9708def694b0`
+completed seven successful HSK mainnet transactions. It deployed the reusable platform and one
+empty `rrUSD` pilot pair against the official USDC.e reserve address.
+
+- Factory: [`0xe6F9207A41766edB96B762e29Bd6B299e1009Df6`](https://hsk.blockscout.com/address/0xe6F9207A41766edB96B762e29Bd6B299e1009Df6)
+- Pilot token: [`0x98D13E05EaaC2E66e86A87603781c6ff9b9cd8B0`](https://hsk.blockscout.com/address/0x98D13E05EaaC2E66e86A87603781c6ff9b9cd8B0)
+- Pilot vault: [`0x05edbecb97ee9128a83465D6227b680627C5130b`](https://hsk.blockscout.com/address/0x05edbecb97ee9128a83465D6227b680627C5130b)
+- Pilot creation: [`0x3944417ecbae94e00cf8138d9e631b07dbde6486d922d5d0fff870cce425d82c`](https://hsk.blockscout.com/tx/0x3944417ecbae94e00cf8138d9e631b07dbde6486d922d5d0fff870cce425d82c)
+
+The four non-proxy source contracts are verified on Blockscout, and the pilot contracts are
+minimal clones of the verified implementations. Fresh on-chain reads report `0` USDC.e reserve
+and `0` rrUSD supply. See the complete [mainnet deployment record](./docs/hsk-mainnet-deployment.md)
+and [machine-readable manifest](./config/deployments/hsk-mainnet.json).
 
 ### Verified HSKChain Testnet rehearsal
 
@@ -106,6 +122,7 @@ Pull requests must pass web lint/typecheck/test/build, Foundry formatting/build/
 ## Evidence and Project Documents
 
 - [Stablecoins-track requirements and judging evidence](./docs/hackathon-requirements.md)
+- [Verified HSK mainnet platform deployment](./docs/hsk-mainnet-deployment.md)
 - [HSK mainnet preflight](./docs/hsk-mainnet-preflight.md)
 - [Verified HSK testnet deployment](./docs/hsk-testnet-deployment.md)
 - [HSK USDC.e fork proof](./docs/hsk-usdce-fork-proof.md)
@@ -116,7 +133,7 @@ Pull requests must pass web lint/typecheck/test/build, Foundry formatting/build/
 - [Demo Day showcase and rehearsal script](./docs/demo-day-showcase.md)
 - [Research context](./context/README.md)
 
-Mainnet deployment addresses, funded lifecycle receipts, and a demo video will be added only after those artifacts exist and have been reviewed. The hosted product and testnet rehearsal evidence above are already public.
+The mainnet platform addresses and receipts above are real and source-verified. Funded mainnet lifecycle receipts and a demo video will be added only after those separate artifacts exist and have been reviewed.
 
 ## Security and Limitations
 
